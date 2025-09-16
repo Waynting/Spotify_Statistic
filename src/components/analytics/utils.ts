@@ -1,5 +1,10 @@
 // Utility functions for Analytics
 
+// Safe array helper to ensure value is always an array
+export const ensureArray = <T>(value: T[] | undefined | null): T[] => {
+  return Array.isArray(value) ? value : []
+}
+
 export const formatTimeByWindow = (totalMinutes: number, windowType: string) => {
   const hours = totalMinutes / 60
   const days = hours / 24

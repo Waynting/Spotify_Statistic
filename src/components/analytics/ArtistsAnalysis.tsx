@@ -2,7 +2,7 @@ import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Mic, Play, Clock, Users, Star } from 'lucide-react'
 import { AnalyticsArtistData } from '../../types/spotify'
-import { formatTimeByWindow } from './utils'
+import { formatTimeByWindow, ensureArray } from './utils'
 import StatsCard from './StatsCard'
 
 interface ArtistsAnalysisProps {
@@ -139,7 +139,7 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
                     <span>熱度 {artist.popularity}</span>
                   </div>
                 </div>
-                {artist.genres?.length > 0 && (
+                {artist.genres && Array.isArray(artist.genres) && artist.genres.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1 justify-center">
                     {artist.genres.slice(0, 2).map((genre) => (
                       <span key={genre} className="px-2 py-1 bg-gray-700 text-gray-300 text-xs rounded-full">

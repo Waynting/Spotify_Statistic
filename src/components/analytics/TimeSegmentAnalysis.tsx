@@ -122,7 +122,7 @@ export default function TimeSegmentAnalysis({ data }: TimeSegmentAnalysisProps) 
               <p className="text-sm text-gray-400">首歌曲</p>
             </div>
 
-            {segment.topArtists.length > 0 && (
+            {segment.topArtists && Array.isArray(segment.topArtists) && segment.topArtists.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-300 mb-2">熱門藝人</h4>
                 <div className="space-y-1">

@@ -394,7 +394,7 @@ class DataService {
       return {
         id: artist.id,
         name: artist.name,
-        genres: artist.genres.slice(0, 3),
+        genres: Array.isArray(artist.genres) ? artist.genres.slice(0, 3) : [],
         followers: (artist as any).followers?.total || 0,
         popularity: artist.popularity,
         plays: adjustedPlays,
