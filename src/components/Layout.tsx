@@ -1,28 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import { Library, BarChart3, Folders, Settings as SettingsIcon, Wifi, WifiOff, Menu, X } from 'lucide-react'
+import { Library, BarChart3, Folders, Settings as SettingsIcon, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
-import { spotifyApi } from '../lib/api'
 
 export default function Layout() {
   const { isAuthenticated } = useAuthStore()
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
-  
-  useEffect(() => {
-    // Check backend connectivity
-    const checkBackend = async () => {
-      try {
-        await spotifyApi.data.queryTopAlbumsWindow('7d')
-        setBackendStatus('connected')
-      } catch (error) {
-        setBackendStatus('disconnected')
-      }
-    }
-    
-    checkBackend()
-  }, [])
   
   // Close sidebar on route change (mobile)
   useEffect(() => {
@@ -69,28 +53,10 @@ export default function Layout() {
           <h1 className="text-xl lg:text-2xl font-bold text-white">
             Spotify Crate
           </h1>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-muted-foreground">
-              {isAuthenticated ? '已連接' : '離線'}
+          <div className="mt-1">
+            <p className="text-xs text-gray-400">
+              {isAuthenticated ? 'Spotify 已連接' : '未連接 Spotify'}
             </p>
-            <div className="flex items-center gap-1" role="status" aria-label="連線狀態">
-              {backendStatus === 'connected' ? (
-                <>
-                  <Wifi size={12} className="text-white" aria-hidden="true" />
-                  <span className="sr-only">已連線</span>
-                </>
-              ) : backendStatus === 'disconnected' ? (
-                <>
-                  <WifiOff size={12} className="text-gray-500" aria-hidden="true" />
-                  <span className="sr-only">未連線</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-3 h-3 bg-gray-400 rounded-full animate-pulse" aria-hidden="true" />
-                  <span className="sr-only">連線中</span>
-                </>
-              )}
-            </div>
           </div>
         </div>
         

@@ -1,5 +1,4 @@
 import { spotifyWebAPI } from './spotify-web-api'
-import { spotifyApi } from './api' // fallback to demo data
 import { AlbumRow } from '../types'
 import {
   SpotifyTrack,
@@ -103,10 +102,10 @@ class DataService {
     console.log('🔐 Authentication status:', spotifyWebAPI.isAuthenticated())
     
     try {
-      // 如果離線或 API 不可用，嘗試使用緩存
+      // 如果離線或 API 不可用，使用 demo data
       if (!spotifyWebAPI.isAuthenticated()) {
         console.log('⚠️ Not authenticated, using demo data')
-        return spotifyApi.data.queryTopAlbumsWindow(window)
+        return this.getDemoAlbumsData(window)
       }
 
       // Map time windows to Spotify time ranges using centralized method
@@ -177,7 +176,7 @@ class DataService {
       console.log('🔄 Falling back to demo data')
       
       // 最後退回到 demo 數據
-      return spotifyApi.data.queryTopAlbumsWindow(window)
+      return this.getDemoAlbumsData(window)
     }
   }
 
@@ -436,6 +435,23 @@ class DataService {
         count,
         percentage: Math.round((count / topArtists.items.length) * 100)
       }))
+  }
+
+  private getDemoAlbumsData(window: string): AlbumRow[] {
+    const multiplier = this.getWindowMultiplier(window)
+    
+    const demoAlbums = [
+      { album_id: '1', album_name: 'A Night at the Opera - Queen', album_image: '', plays: Math.round(45 * multiplier), minutes: Math.round(180 * multiplier / 10), last_played: Date.now() },
+      { album_id: '2', album_name: 'Hotel California - Eagles', album_image: '', plays: Math.round(42 * multiplier), minutes: Math.round(170 * multiplier / 10), last_played: Date.now() },
+      { album_id: '3', album_name: 'Led Zeppelin IV - Led Zeppelin', album_image: '', plays: Math.round(40 * multiplier), minutes: Math.round(160 * multiplier / 10), last_played: Date.now() },
+      { album_id: '4', album_name: 'Imagine - John Lennon', album_image: '', plays: Math.round(38 * multiplier), minutes: Math.round(150 * multiplier / 10), last_played: Date.now() },
+      { album_id: '5', album_name: 'Appetite for Destruction - Guns N\' Roses', album_image: '', plays: Math.round(35 * multiplier), minutes: Math.round(140 * multiplier / 10), last_played: Date.now() },
+      { album_id: '6', album_name: 'The Dark Side of the Moon - Pink Floyd', album_image: '', plays: Math.round(32 * multiplier), minutes: Math.round(130 * multiplier / 10), last_played: Date.now() },
+      { album_id: '7', album_name: 'Back in Black - AC/DC', album_image: '', plays: Math.round(30 * multiplier), minutes: Math.round(120 * multiplier / 10), last_played: Date.now() },
+      { album_id: '8', album_name: 'Thriller - Michael Jackson', album_image: '', plays: Math.round(28 * multiplier), minutes: Math.round(110 * multiplier / 10), last_played: Date.now() }
+    ]
+    
+    return demoAlbums.slice(0, 15)
   }
 
   private getDemoAnalyticsData(window: string, analysisType: string): (AnalyticsTrackData | AnalyticsAlbumData | AnalyticsArtistData | AnalyticsGenreData)[] {

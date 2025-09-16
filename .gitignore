@@ -69,6 +69,7 @@ Thumbs.db
 
 # Spotify credentials (keep these secret!)
 .env.production
+.env
 
 # Build artifacts
 *.tgz

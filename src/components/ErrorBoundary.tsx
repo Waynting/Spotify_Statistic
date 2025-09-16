@@ -31,7 +31,7 @@ export default class ErrorBoundary extends React.Component<
             <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-6" />
             <h1 className="text-2xl font-bold mb-4">發生錯誤</h1>
             <p className="text-gray-400 mb-6">
-              應用程式遇到了問題。這可能是因為 Tauri 後端服務未運行。
+              應用程式遇到了未預期的錯誤。請查看錯誤詳情或重新載入頁面。
             </p>
             <div className="space-y-4">
               <button
