@@ -8,7 +8,8 @@ import {
 import { 
   TrendingUp, Music, Clock, Calendar, Users, Star, RefreshCw, Loader2, 
   Headphones, Disc, Mic, Radio, Wifi, WifiOff, AlertTriangle, Play, Heart,
-  Trophy, Zap, TrendingDown, Volume2, Timer
+  Trophy, Zap, TrendingDown, Volume2, Timer,
+  BarChart as BarChartIcon, PieChart as PieChartIcon
 } from 'lucide-react'
 import { 
   AnalyticsTrackData, 
@@ -362,7 +363,7 @@ export default function Analytics() {
         {/* Albums Chart */}
         <div className="bg-black border border-gray-800 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <BarChart className="text-blue-400" size={20} />
+            <BarChartIcon className="text-blue-400" size={20} />
             播放次數分析
           </h3>
           <div className="h-80">
@@ -494,7 +495,7 @@ export default function Analytics() {
         {/* Tracks Chart */}
         <div className="bg-black border border-gray-800 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <BarChart className="text-blue-400" size={20} />
+            <BarChartIcon className="text-blue-400" size={20} />
             播放次數分析
           </h3>
           <div className="h-80">
@@ -705,7 +706,7 @@ export default function Analytics() {
           {/* Pie Chart */}
           <div className="bg-black border border-gray-800 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <PieChart className="text-purple-400" size={20} />
+              <PieChartIcon className="text-purple-400" size={20} />
               風格比例圖
             </h3>
             <div className="h-80">
@@ -796,7 +797,7 @@ export default function Analytics() {
         <div className="bg-black border border-gray-800 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <BarChart className="text-blue-400" size={20} />
+              <BarChartIcon className="text-blue-400" size={20} />
               時間段聆聽分佈
             </h3>
             <DataSourceIndicator sourceInfo={sourceInfo} />
@@ -853,7 +854,7 @@ export default function Analytics() {
         {/* Pie Chart */}
         <div className="bg-black border border-gray-800 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-            <PieChart className="text-purple-400" size={20} />
+            <PieChartIcon className="text-purple-400" size={20} />
             時間段偏好分析
           </h3>
           <div className="h-96">
