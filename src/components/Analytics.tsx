@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dataService } from '../lib/data-service'
 import { 
@@ -9,7 +9,7 @@ import {
   TrendingUp, Music, Clock, Calendar, Users, Star, RefreshCw, Loader2, 
   Headphones, Disc, Mic, Radio, Wifi, WifiOff, AlertTriangle, Play, Heart,
   Trophy, Zap, TrendingDown, Volume2, Timer,
-  BarChart as BarChartIcon, PieChart as PieChartIcon
+  BarChart as BarChartIcon, PieChart as PieChartIcon, Menu, X, ChevronDown
 } from 'lucide-react'
 import { 
   AnalyticsTrackData, 
@@ -72,6 +72,28 @@ const analysisTypes = [
 export default function Analytics() {
   const [selectedWindow, setSelectedWindow] = useState('30d')
   const [selectedAnalysis, setSelectedAnalysis] = useState('albums') // 默認顯示專輯
+  const [isAnalysisMenuOpen, setIsAnalysisMenuOpen] = useState(false)
+  const [isTimeWindowMenuOpen, setIsTimeWindowMenuOpen] = useState(false)
+
+  const analysisMenuRef = useRef<HTMLDivElement>(null)
+  const timeWindowMenuRef = useRef<HTMLDivElement>(null)
+
+  // 點擊外部關閉選單
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (analysisMenuRef.current && !analysisMenuRef.current.contains(event.target as Node)) {
+        setIsAnalysisMenuOpen(false)
+      }
+      if (timeWindowMenuRef.current && !timeWindowMenuRef.current.contains(event.target as Node)) {
+        setIsTimeWindowMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   // 獲取常規分析數據
   const { data: analyticsResponse, isLoading: isLoadingAnalytics, error: analyticsError, refetch: refetchAnalytics } = useQuery({
@@ -167,21 +189,21 @@ export default function Analytics() {
   const StatsCard = ({ icon: Icon, title, value, subtitle, trend, color = "text-gray-400" }: {
     icon: any, title: string, value: string, subtitle?: string, trend?: 'up' | 'down' | 'stable', color?: string
   }) => (
-    <div className="bg-black border border-gray-800 rounded-xl p-4 hover:bg-gray-900 transition-all duration-200">
+    <div className="bg-black border border-gray-800 rounded-xl p-3 sm:p-4 hover:bg-gray-900 transition-all duration-200">
       <div className="flex items-center justify-between mb-2">
-        <Icon className={`${color} w-5 h-5`} />
+        <Icon className={`${color} w-4 h-4 sm:w-5 sm:h-5`} />
         {trend && (
           <div className={`flex items-center text-xs ${
             trend === 'up' ? 'text-white' : 
             trend === 'down' ? 'text-gray-500' : 'text-gray-400'
           }`}>
-            {trend === 'up' && <TrendingUp size={12} />}
-            {trend === 'down' && <TrendingDown size={12} />}
+            {trend === 'up' && <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />}
+            {trend === 'down' && <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
           </div>
         )}
       </div>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-sm text-gray-400">{title}</div>
+      <div className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1">{value}</div>
+      <div className="text-xs sm:text-sm text-gray-400">{title}</div>
       {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
     </div>
   )
@@ -891,71 +913,213 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-6">
           <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
               音樂數據分析
             </h1>
-            <p className="text-gray-400">探索你的音樂世界，發現聆聽偏好</p>
+            <p className="text-sm sm:text-base text-gray-400">探索你的音樂世界，發現聆聽偏好</p>
           </div>
           
           <button
             onClick={() => refetch()}
-            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white px-3 py-2 sm:px-4 rounded-lg flex items-center gap-2 transition-colors text-sm sm:text-base"
           >
-            <RefreshCw size={16} />
-            更新資料
+            <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">更新資料</span>
+            <span className="sm:hidden">更新</span>
           </button>
         </div>
 
         {/* Analysis Type Selector */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-          {analysisTypes.map((type) => (
-            <button
-              key={type.id}
-              onClick={() => setSelectedAnalysis(type.id)}
-              className={`
-                relative p-4 rounded-xl transition-all duration-200 group overflow-hidden
-                ${selectedAnalysis === type.id 
-                  ? 'bg-white text-black shadow-lg transform scale-105' 
-                  : 'bg-gray-900 border border-gray-700 text-gray-300 hover:bg-gray-800'
-                }
-              `}
-            >
-              <div className="relative z-10">
-                <type.icon className="w-6 h-6 mx-auto mb-2" />
-                <div className="font-medium text-sm">{type.label}</div>
-                <div className={`text-xs mt-1 ${
-                  selectedAnalysis === type.id ? 'text-gray-600' : 'text-gray-400'
-                }`}>
-                  {type.description}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Time Window Selector - 只有非時間段分析才顯示 */}
-        {selectedAnalysis !== 'timeSegments' && (
-          <div className="flex flex-wrap gap-3 mb-8">
-            {timeWindows.map((window) => (
+        <div className="mb-8">
+          {/* Desktop版本 - 隱藏在小螢幕 */}
+          <div className="hidden lg:grid grid-cols-5 gap-3">
+            {analysisTypes.map((type) => (
               <button
-                key={window.value}
-                onClick={() => setSelectedWindow(window.value)}
+                key={type.id}
+                onClick={() => setSelectedAnalysis(type.id)}
                 className={`
-                  px-4 py-2 rounded-lg transition-all duration-200 text-sm
-                  ${selectedWindow === window.value
-                    ? 'bg-white text-black shadow-lg transform scale-105'
+                  relative p-4 rounded-xl transition-all duration-200 group overflow-hidden
+                  ${selectedAnalysis === type.id 
+                    ? 'bg-white text-black shadow-lg transform scale-105' 
                     : 'bg-gray-900 border border-gray-700 text-gray-300 hover:bg-gray-800'
                   }
                 `}
               >
-                <div className="font-medium">{window.label}</div>
-                <div className="text-xs opacity-75">{window.description}</div>
+                <div className="relative z-10">
+                  <type.icon className="w-6 h-6 mx-auto mb-2" />
+                  <div className="font-medium text-sm">{type.label}</div>
+                  <div className={`text-xs mt-1 ${
+                    selectedAnalysis === type.id ? 'text-gray-600' : 'text-gray-400'
+                  }`}>
+                    {type.description}
+                  </div>
+                </div>
               </button>
             ))}
+          </div>
+
+          {/* 平板版本 - 顯示在中等螢幕 */}
+          <div className="hidden md:grid lg:hidden grid-cols-3 gap-3">
+            {analysisTypes.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => setSelectedAnalysis(type.id)}
+                className={`
+                  relative p-3 rounded-xl transition-all duration-200 group overflow-hidden
+                  ${selectedAnalysis === type.id 
+                    ? 'bg-white text-black shadow-lg' 
+                    : 'bg-gray-900 border border-gray-700 text-gray-300 hover:bg-gray-800'
+                  }
+                `}
+              >
+                <div className="relative z-10 flex items-center gap-3">
+                  <type.icon className="w-5 h-5" />
+                  <div>
+                    <div className="font-medium text-sm">{type.label}</div>
+                    <div className={`text-xs ${
+                      selectedAnalysis === type.id ? 'text-gray-600' : 'text-gray-400'
+                    }`}>
+                      {type.description}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* 手機版本 - 下拉選單 */}
+          <div className="md:hidden relative" ref={analysisMenuRef}>
+            <button
+              onClick={() => setIsAnalysisMenuOpen(!isAnalysisMenuOpen)}
+              className="w-full p-4 bg-gray-900 border border-gray-700 rounded-xl text-white hover:bg-gray-800 transition-all duration-200"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {analysisTypes.find(t => t.id === selectedAnalysis)?.icon && (
+                    React.createElement(analysisTypes.find(t => t.id === selectedAnalysis)!.icon, { className: "w-5 h-5" })
+                  )}
+                  <div className="text-left">
+                    <div className="font-medium">
+                      {analysisTypes.find(t => t.id === selectedAnalysis)?.label}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {analysisTypes.find(t => t.id === selectedAnalysis)?.description}
+                    </div>
+                  </div>
+                </div>
+                <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${
+                  isAnalysisMenuOpen ? 'rotate-180' : ''
+                }`} />
+              </div>
+            </button>
+
+            {/* 下拉選項 */}
+            {isAnalysisMenuOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-lg z-50">
+                {analysisTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      setSelectedAnalysis(type.id)
+                      setIsAnalysisMenuOpen(false)
+                    }}
+                    className={`
+                      w-full p-4 text-left hover:bg-gray-800 transition-all duration-200 first:rounded-t-xl last:rounded-b-xl
+                      ${selectedAnalysis === type.id ? 'bg-gray-800' : ''}
+                    `}
+                  >
+                    <div className="flex items-center gap-3">
+                      <type.icon className="w-5 h-5 text-gray-300" />
+                      <div>
+                        <div className="font-medium text-white">{type.label}</div>
+                        <div className="text-xs text-gray-400">{type.description}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Time Window Selector - 只有非時間段分析才顯示 */}
+        {selectedAnalysis !== 'timeSegments' && (
+          <div className="mb-8">
+            {/* Desktop/平板版本 */}
+            <div className="hidden sm:flex flex-wrap gap-3">
+              {timeWindows.map((window) => (
+                <button
+                  key={window.value}
+                  onClick={() => setSelectedWindow(window.value)}
+                  className={`
+                    px-4 py-2 rounded-lg transition-all duration-200 text-sm
+                    ${selectedWindow === window.value
+                      ? 'bg-white text-black shadow-lg transform scale-105'
+                      : 'bg-gray-900 border border-gray-700 text-gray-300 hover:bg-gray-800'
+                    }
+                  `}
+                >
+                  <div className="font-medium">{window.label}</div>
+                  <div className="text-xs opacity-75">{window.description}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* 手機版本 - 下拉選單 */}
+            <div className="sm:hidden relative" ref={timeWindowMenuRef}>
+              <button
+                onClick={() => setIsTimeWindowMenuOpen(!isTimeWindowMenuOpen)}
+                className="w-full p-3 bg-gray-900 border border-gray-700 rounded-xl text-white hover:bg-gray-800 transition-all duration-200"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4" />
+                    <div className="text-left">
+                      <div className="font-medium text-sm">
+                        {timeWindows.find(w => w.value === selectedWindow)?.label}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {timeWindows.find(w => w.value === selectedWindow)?.description}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                    isTimeWindowMenuOpen ? 'rotate-180' : ''
+                  }`} />
+                </div>
+              </button>
+
+              {/* 下拉選項 */}
+              {isTimeWindowMenuOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 border border-gray-700 rounded-xl shadow-lg z-40">
+                  {timeWindows.map((window) => (
+                    <button
+                      key={window.value}
+                      onClick={() => {
+                        setSelectedWindow(window.value)
+                        setIsTimeWindowMenuOpen(false)
+                      }}
+                      className={`
+                        w-full p-3 text-left hover:bg-gray-800 transition-all duration-200 first:rounded-t-xl last:rounded-b-xl
+                        ${selectedWindow === window.value ? 'bg-gray-800' : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Clock className="w-4 h-4 text-gray-300" />
+                        <div>
+                          <div className="font-medium text-white text-sm">{window.label}</div>
+                          <div className="text-xs text-gray-400">{window.description}</div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
