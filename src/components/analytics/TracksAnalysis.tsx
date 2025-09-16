@@ -11,6 +11,16 @@ interface TracksAnalysisProps {
 }
 
 export default function TracksAnalysis({ data, selectedWindow }: TracksAnalysisProps) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Headphones size={64} className="mx-auto mb-4 text-gray-500" />
+        <h2 className="text-2xl font-semibold mb-2 text-white">沒有歌曲數據</h2>
+        <p className="text-gray-400">選擇的時間範圍內沒有找到歌曲數據</p>
+      </div>
+    )
+  }
+
   const topTracks = data.slice(0, 10)
   const totalPlays = data.reduce((sum, track) => sum + track.plays, 0)
   const totalMinutes = data.reduce((sum, track) => sum + (track.duration * track.plays), 0)

@@ -11,7 +11,7 @@ interface TimeSegmentAnalysisProps {
 }
 
 export default function TimeSegmentAnalysis({ data }: TimeSegmentAnalysisProps) {
-  if (!data.length) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <div className="text-center py-20">
         <Clock size={64} className="mx-auto mb-4 text-gray-500" />

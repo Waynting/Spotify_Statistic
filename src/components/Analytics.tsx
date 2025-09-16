@@ -107,8 +107,8 @@ export default function Analytics() {
     return <ErrorDisplay error={error} onRetry={() => refetch()} />
   }
 
-  // Show loading or no data state
-  if (isLoading || !safeCurrentData.length) {
+  // Show loading state only when actively loading
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-black">
         <div className="p-8">
@@ -122,16 +122,7 @@ export default function Analytics() {
   }
 
   const renderMainContent = () => {
-    if (!safeCurrentData.length) {
-      return (
-        <div className="text-center py-20">
-          <Music size={64} className="mx-auto mb-4 text-gray-500" />
-          <h2 className="text-2xl font-semibold mb-2 text-white">沒有數據</h2>
-          <p className="text-gray-400">選擇的時間範圍內沒有找到數據</p>
-        </div>
-      )
-    }
-
+    // Each component handles its own empty state, so we pass the data as-is
     switch (selectedAnalysis) {
       case 'albums':
         return <AlbumsAnalysis data={safeCurrentData as AnalyticsAlbumData[]} selectedWindow={selectedWindow} />

@@ -11,6 +11,16 @@ interface GenresAnalysisProps {
 }
 
 export default function GenresAnalysis({ data }: GenresAnalysisProps) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Radio size={64} className="mx-auto mb-4 text-gray-500" />
+        <h2 className="text-2xl font-semibold mb-2 text-white">沒有曲風數據</h2>
+        <p className="text-gray-400">選擇的時間範圍內沒有找到曲風數據</p>
+      </div>
+    )
+  }
+
   const topGenres = data.slice(0, 8)
   const totalCount = data.reduce((sum, genre) => sum + genre.count, 0)
   const mostPopularGenre = data[0]

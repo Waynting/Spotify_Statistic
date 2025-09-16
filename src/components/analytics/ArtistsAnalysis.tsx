@@ -11,6 +11,16 @@ interface ArtistsAnalysisProps {
 }
 
 export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysisProps) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Mic size={64} className="mx-auto mb-4 text-gray-500" />
+        <h2 className="text-2xl font-semibold mb-2 text-white">沒有藝人數據</h2>
+        <p className="text-gray-400">選擇的時間範圍內沒有找到藝人數據</p>
+      </div>
+    )
+  }
+
   const topArtists = data.slice(0, 8)
   const totalPlays = data.reduce((sum, artist) => sum + artist.plays, 0)
   const totalMinutes = data.reduce((sum, artist) => sum + (artist.minutes || 0), 0)

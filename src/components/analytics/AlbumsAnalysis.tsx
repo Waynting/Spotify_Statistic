@@ -1,6 +1,6 @@
 import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { Disc, Play, Clock, Volume2 } from 'lucide-react'
+import { Disc, Play, Clock, Volume2, Music } from 'lucide-react'
 import { AnalyticsAlbumData } from '../../types/spotify'
 import { formatTimeByWindow } from './utils'
 import StatsCard from './StatsCard'
@@ -11,6 +11,16 @@ interface AlbumsAnalysisProps {
 }
 
 export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisProps) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Music size={64} className="mx-auto mb-4 text-gray-500" />
+        <h2 className="text-2xl font-semibold mb-2 text-white">沒有專輯數據</h2>
+        <p className="text-gray-400">選擇的時間範圍內沒有找到專輯數據</p>
+      </div>
+    )
+  }
+
   const topAlbums = data.slice(0, 6)
   const totalPlays = data.reduce((sum, album) => sum + album.plays, 0)
   const totalMinutes = data.reduce((sum, album) => sum + album.minutes, 0)
