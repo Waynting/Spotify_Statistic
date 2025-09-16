@@ -151,13 +151,14 @@ class CacheManager {
     return this.get<AnalyticsResponse<T>>(key)
   }
 
-  public cacheTimeSegments<T>(data: AnalyticsResponse<T>, ttl?: number): void {
-    const key = 'timeSegments'
+  public cacheTimeSegments<T>(data: AnalyticsResponse<T>, ttl?: number, window: string = '30d'): void {
+    const key = this.generateKey('timeSegments', { window })
     this.set(key, data, ttl)
   }
 
-  public getCachedTimeSegments<T>(): AnalyticsResponse<T> | null {
-    return this.get<AnalyticsResponse<T>>('timeSegments')
+  public getCachedTimeSegments<T>(window: string = '30d'): AnalyticsResponse<T> | null {
+    const key = this.generateKey('timeSegments', { window })
+    return this.get<AnalyticsResponse<T>>(key)
   }
 
   public cacheTopAlbums(window: string, data: any[], ttl?: number): void {

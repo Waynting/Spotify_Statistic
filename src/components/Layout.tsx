@@ -3,7 +3,6 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { Library, BarChart3, Folders, Settings as SettingsIcon, Wifi, WifiOff, Menu, X } from 'lucide-react'
 import { useAuthStore } from '../store/useAuthStore'
 import { spotifyApi } from '../lib/api'
-import { ModeToggle } from './mode-toggle'
 
 export default function Layout() {
   const { isAuthenticated } = useAuthStore()
@@ -31,18 +30,18 @@ export default function Layout() {
   }, [location.pathname])
 
   const navItems = [
-    { to: '/albums', icon: Library, label: '專輯分析', ariaLabel: '前往專輯分析頁面' },
-    { to: '/analytics', icon: BarChart3, label: '數據概覽', ariaLabel: '前往數據概覽頁面' },
-    { to: '/crates', icon: Folders, label: '收納夾', ariaLabel: '前往收納夾頁面' },
+    { to: '/analytics', icon: BarChart3, label: '數據分析', ariaLabel: '前往數據分析頁面' },
+    { to: '/albums', icon: Library, label: '唱片櫃', ariaLabel: '前往唱片櫃頁面' },
+    { to: '/crates', icon: Folders, label: '歌單匯入', ariaLabel: '前往歌單匯入頁面' },
     { to: '/settings', icon: SettingsIcon, label: '設定', ariaLabel: '前往設定頁面' },
   ]
 
   return (
-    <div className="flex h-screen bg-background transition-colors">
+    <div className="flex h-screen bg-black text-white">
       {/* Mobile menu button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
         aria-label="切換導航選單"
         aria-expanded={sidebarOpen}
       >
@@ -61,7 +60,7 @@ export default function Layout() {
       {/* Sidebar */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-40
-        w-64 bg-card border-r border-border p-4 lg:p-6
+        w-64 bg-gray-900 border-r border-gray-800 p-4 lg:p-6
         transform transition-transform duration-300 ease-in-out
         lg:transform-none
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
@@ -103,8 +102,8 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive 
-                    ? 'bg-accent text-accent-foreground shadow-lg' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                    ? 'bg-white text-black shadow-lg' 
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`
               }
               aria-label={ariaLabel}
@@ -115,10 +114,6 @@ export default function Layout() {
           ))}
         </nav>
         
-        {/* Theme Toggle at bottom of sidebar */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <ModeToggle />
-        </div>
       </aside>
       
       {/* Main Content */}

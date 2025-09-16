@@ -33,7 +33,7 @@ export default function SpotifyCallback() {
         
         // Redirect to main app after a short delay
         setTimeout(() => {
-          navigate('/albums')
+          navigate('/analytics')
         }, 2000)
         
       } catch (err) {
@@ -79,7 +79,7 @@ export default function SpotifyCallback() {
                   重試連接
                 </button>
                 <button
-                  onClick={() => navigate('/albums')}
+                  onClick={() => navigate('/analytics')}
                   className="btn btn-secondary"
                 >
                   返回應用

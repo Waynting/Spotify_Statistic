@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
-import { ThemeProvider } from '../components/theme-provider'
 import Layout from '../components/Layout'
 import Albums from '../components/Albums'
 import Analytics from '../components/Analytics'
@@ -20,18 +19,13 @@ export default function App() {
 
   // Always show the main app - authentication is optional
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <div className="min-h-screen bg-black text-white">
       <ErrorBoundary>
         <BrowserRouter>
           <Routes>
             <Route path="/callback" element={<SpotifyCallback />} />
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/albums" replace />} />
+              <Route index element={<Navigate to="/analytics" replace />} />
               <Route path="albums" element={<Albums />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="crates" element={<Crates />} />
@@ -40,6 +34,6 @@ export default function App() {
           </Routes>
         </BrowserRouter>
       </ErrorBoundary>
-    </ThemeProvider>
+    </div>
   )
 }

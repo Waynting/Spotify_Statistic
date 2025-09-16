@@ -504,10 +504,23 @@ class DataService {
     }
   }
 
+  private getRecentTracksLimit(window: string): number {
+    // 根據時間窗口調整獲取的最近播放記錄數量
+    // Spotify API 限制最多50首，但我們可以根據需要調整
+    switch (window) {
+      case '7d': return 50    // 7天
+      case '30d': return 50   // 30天
+      case '90d': return 50   // 90天
+      case '180d': return 50  // 180天
+      case '365d': return 50  // 365天
+      default: return 50
+    }
+  }
+
   // 新增時間段分析方法
-  public async getTimeSegmentAnalysis(): Promise<AnalyticsResponse<TimeSegmentData>> {
-    // Check cache first
-    const cached = cacheManager.getCachedTimeSegments<TimeSegmentData>()
+  public async getTimeSegmentAnalysis(window: string = '30d'): Promise<AnalyticsResponse<TimeSegmentData>> {
+    // Check cache first (include window in cache key)
+    const cached = cacheManager.getCachedTimeSegments<TimeSegmentData>(window)
     if (cached) {
       return {
         ...cached,
@@ -518,16 +531,18 @@ class DataService {
     try {
       if (!spotifyWebAPI.isAuthenticated()) {
         const response = {
-          data: this.getDemoTimeSegmentData(),
+          data: this.getDemoTimeSegmentData(window),
           sourceInfo: this.createSourceInfo('demo')
         }
         
         // Cache demo data for shorter time
-        cacheManager.cacheTimeSegments(response, 2 * 60 * 1000) // 2 minutes
+        cacheManager.cacheTimeSegments(response, 2 * 60 * 1000, window) // 2 minutes
         return response
       }
 
-      const recentTracks = await spotifyWebAPI.getRecentlyPlayed(50)
+      // 根據時間窗口獲取不同數量的最近播放記錄
+      const limit = this.getRecentTracksLimit(window)
+      const recentTracks = await spotifyWebAPI.getRecentlyPlayed(limit)
       
       // 定義時間段
       const timeSegments = {
@@ -606,39 +621,63 @@ class DataService {
     }
   }
 
-  private getDemoTimeSegmentData(): TimeSegmentData[] {
+  private getDemoTimeSegmentData(window: string = '30d'): TimeSegmentData[] {
+    const multiplier = this.getWindowMultiplier(window)
+    
+    const baseTotals = { morning: 12, afternoon: 18, evening: 15, night: 5 }
+    const adjustedTotals = {
+      morning: Math.round(baseTotals.morning * multiplier),
+      afternoon: Math.round(baseTotals.afternoon * multiplier),
+      evening: Math.round(baseTotals.evening * multiplier),
+      night: Math.round(baseTotals.night * multiplier)
+    }
+    
+    const grandTotal = Object.values(adjustedTotals).reduce((sum, val) => sum + val, 0)
+    
     return [
       {
         segment: 'morning' as const,
         label: '早上 (6:00-12:00)',
-        totalTracks: 12,
+        totalTracks: adjustedTotals.morning,
         tracks: [],
-        topArtists: [{ name: 'Taylor Swift', count: 3 }, { name: 'Ed Sheeran', count: 2 }],
-        percentage: 24
+        topArtists: [
+          { name: 'Taylor Swift', count: Math.round(3 * multiplier) }, 
+          { name: 'Ed Sheeran', count: Math.round(2 * multiplier) }
+        ],
+        percentage: Math.round((adjustedTotals.morning / grandTotal) * 100)
       },
       {
         segment: 'afternoon' as const,
         label: '下午 (12:00-18:00)',
-        totalTracks: 18,
+        totalTracks: adjustedTotals.afternoon,
         tracks: [],
-        topArtists: [{ name: 'The Weeknd', count: 4 }, { name: 'Dua Lipa', count: 3 }],
-        percentage: 36
+        topArtists: [
+          { name: 'The Weeknd', count: Math.round(4 * multiplier) }, 
+          { name: 'Dua Lipa', count: Math.round(3 * multiplier) }
+        ],
+        percentage: Math.round((adjustedTotals.afternoon / grandTotal) * 100)
       },
       {
         segment: 'evening' as const,
         label: '晚上 (18:00-24:00)',
-        totalTracks: 15,
+        totalTracks: adjustedTotals.evening,
         tracks: [],
-        topArtists: [{ name: 'Billie Eilish', count: 3 }, { name: 'Post Malone', count: 2 }],
-        percentage: 30
+        topArtists: [
+          { name: 'Billie Eilish', count: Math.round(3 * multiplier) }, 
+          { name: 'Post Malone', count: Math.round(2 * multiplier) }
+        ],
+        percentage: Math.round((adjustedTotals.evening / grandTotal) * 100)
       },
       {
         segment: 'night' as const,
         label: '半夜 (0:00-6:00)',
-        totalTracks: 5,
+        totalTracks: adjustedTotals.night,
         tracks: [],
-        topArtists: [{ name: 'Lo-fi Hip Hop', count: 2 }, { name: 'Ambient', count: 1 }],
-        percentage: 10
+        topArtists: [
+          { name: 'Lo-fi Hip Hop', count: Math.round(2 * multiplier) }, 
+          { name: 'Ambient', count: Math.round(1 * multiplier) }
+        ],
+        percentage: Math.round((adjustedTotals.night / grandTotal) * 100)
       }
     ]
   }
