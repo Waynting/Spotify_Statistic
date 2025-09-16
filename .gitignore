@@ -8,8 +8,7 @@ node_modules/
 /build
 
 # Environment variables
-.env
-.env.example
+.env*
 .env.local
 .env.development.local
 .env.test.local
@@ -70,8 +69,7 @@ Thumbs.db
 *.temp
 
 # Spotify credentials (keep these secret!)
-.env.production
-.env
+# Already covered by .env* pattern above
 
 # Build artifacts
 *.tgz
