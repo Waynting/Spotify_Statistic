@@ -54,12 +54,27 @@ npm run build
 ```
 
 #### Vercel
+
 ```bash
 # 1. 安裝 Vercel CLI
 npm i -g vercel
 
 # 2. 部署
 vercel --prod
+```
+
+**Vercel 環境變數設定：**
+在 Vercel Dashboard 中設定以下環境變數：
+- `VITE_SPOTIFY_CLIENT_ID`: 你的 Spotify Client ID
+- `VITE_SPOTIFY_REDIRECT_URI_PROD`: https://你的域名.vercel.app/callback
+
+**Vercel 配置文件 (vercel.json)：**
+```json
+{
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
 ```
 
 #### GitHub Pages

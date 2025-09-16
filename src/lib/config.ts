@@ -7,8 +7,14 @@ const getRedirectUri = () => {
     // Desktop app - use desktop redirect URI
     return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_DESKTOP || 'http://127.0.0.1:8001/callback'
   } else {
-    // Web app - use web redirect URI
-    return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_WEB || 'http://127.0.0.1:8000/callback'
+    // Web app - use web redirect URI based on environment
+    if (import.meta.env.PROD) {
+      // Production - use the actual deployed URL
+      return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_PROD || 'https://spotify-statistic-ntu.vercel.app/callback'
+    } else {
+      // Development - use local URL
+      return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_WEB || 'http://127.0.0.1:8000/callback'
+    }
   }
 }
 
