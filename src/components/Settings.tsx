@@ -113,38 +113,72 @@ export default function Settings() {
             </div>
             
             {!isAuthenticated && (
-              <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                <p className="text-sm text-white mb-2">
-                  連接 Spotify 後可以：
-                </p>
-                <ul className="text-sm text-gray-400 space-y-1 list-disc list-inside">
-                  <li>查看你的真實聆聽記錄</li>
-                  <li>分析你的音樂品味</li>
-                  <li>取得個人化的統計數據</li>
-                  <li>探索你的音樂習慣和偏好</li>
-                </ul>
+              <div className="space-y-4">
+                <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                  <p className="text-sm text-white mb-2">
+                    連接 Spotify 後可以：
+                  </p>
+                  <ul className="text-sm text-gray-400 space-y-1 list-disc list-inside">
+                    <li>查看你的真實聆聽記錄和專輯封面</li>
+                    <li>分析不同時段的音樂偏好（智能時間分析）</li>
+                    <li>取得個人化的統計數據和聆聽趨勢</li>
+                    <li>透過 Spotify Connect 控制音樂播放</li>
+                    <li>探索你的音樂習慣和曲風分佈</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                  <p className="text-sm text-blue-200 mb-2">
+                    <strong>資料安全承諾</strong>
+                  </p>
+                  <p className="text-sm text-blue-300/80">
+                    我們僅存取您授權的 Spotify 資料，所有資料處理都在本地進行，不會上傳到我們的伺服器。您可以隨時撤銷授權。
+                  </p>
+                </div>
               </div>
             )}
           </div>
         </section>
 
-        {/* About Section */}
+        {/* Legal & About Section */}
         <section className="bg-black border border-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 text-white">關於</h2>
-          <div className="space-y-2 text-sm text-gray-400">
-            <p>Spotify Crate v{config.app.version}</p>
-            <p>一個現代化的音樂聆聽分析工具</p>
-            <p>使用 React + TypeScript + Tailwind CSS 開發</p>
-            <div className="flex items-center gap-2 mt-4">
+          <h2 className="text-xl font-semibold mb-4 text-white">法律與關於</h2>
+          <div className="space-y-4">
+            {/* Legal Links */}
+            <div className="flex flex-wrap gap-4">
               <a
-                href="https://developer.spotify.com/documentation/web-api"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-white hover:text-gray-300 flex items-center gap-1 transition-colors"
+                href="/privacy"
+                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
               >
                 <ExternalLink size={14} />
-                Spotify Web API 文件
+                隱私政策
               </a>
+              <a
+                href="/terms"
+                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
+              >
+                <ExternalLink size={14} />
+                使用條款
+              </a>
+              <a
+                href="https://www.spotify.com/account/apps/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
+              >
+                <ExternalLink size={14} />
+                管理 Spotify 應用程式授權
+              </a>
+            </div>
+            
+            {/* App Info */}
+            <div className="space-y-2 text-sm text-gray-400 pt-4 border-t border-gray-800">
+              <p><strong className="text-white">Spotify Crate</strong> v{config.app.version}</p>
+              <p>一個現代化的音樂聆聽分析工具，採用純黑色設計和陽光主題配色</p>
+              <p>使用 React + TypeScript + Tailwind CSS + Recharts 開發</p>
+              <p className="text-xs text-gray-500 mt-2">
+                此應用程式不隸屬於 Spotify AB，僅使用 Spotify Web API 提供服務。
+              </p>
             </div>
           </div>
         </section>

@@ -7,6 +7,8 @@ import Analytics from '../components/Analytics'
 import Crates from '../components/Crates'
 import SpotifyCallback from '../components/SpotifyCallback'
 import Settings from '../components/Settings'
+import PrivacyPolicy from '../components/PrivacyPolicy'
+import TermsOfUse from '../components/TermsOfUse'
 import ErrorBoundary from '../components/ErrorBoundary'
 
 export default function App() {
@@ -24,6 +26,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/callback" element={<SpotifyCallback />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
             <Route path="/" element={<Layout />}>
               <Route index element={<Navigate to="/analytics" replace />} />
               <Route path="albums" element={<Albums />} />
