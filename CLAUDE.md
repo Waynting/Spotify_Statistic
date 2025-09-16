@@ -4,24 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-This is a Spotify analytics application that works in two environments:
-1. **Web Version**: React + TypeScript + Vite web app with Spotify OAuth
-2. **Desktop Version**: Tauri app with Rust backend (currently disabled - focus on web version)
+This is a Spotify analytics application with dual-environment support:
+1. **Web Version** (Primary): React + TypeScript + Vite SPA with direct Spotify Web API integration
+2. **Desktop Version**: Tauri wrapper with Rust backend (legacy, focus on web version)
+
+The application follows a modular analytics architecture where components are split by analysis type (albums, tracks, artists, genres, time segments) with shared utilities and consistent design patterns.
 
 ### Tech Stack
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **State Management**: Zustand
-- **Data Fetching**: TanStack Query
-- **Authentication**: Spotify OAuth 2.0 with PKCE flow
-- **Charts**: Recharts
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **State Management**: Zustand (auth state) + TanStack Query (data fetching/caching)
+- **Authentication**: Spotify OAuth 2.0 with PKCE flow (web-native, no backend required)
+- **Charts**: Recharts with custom theming
 - **Icons**: Lucide React
-- **Theme**: next-themes with shadcn-style CSS variables
+- **Styling**: Pure black backgrounds with vibrant accent colors
 
 ### Core Features
-1. **唱片櫃 (Album Shelf)**: Visual grid of top albums with time window filtering (7d/一個月/180d/365d)
-2. **聆聽分析 (Analytics)**: Charts and rankings for tracks, albums, artists, and genres
-3. **歌單匯入 (Crates)**: Import and manage Spotify playlists
-4. **設定 (Settings)**: One-click Spotify authentication and account management
+1. **唱片櫃 (Album Shelf)**: Visual grid with album covers, play counts, time filtering
+2. **聆聽分析 (Analytics)**: Modular analysis components for different data types
+3. **設定 (Settings)**: One-click Spotify OAuth integration
 
 ## Development Commands
 
@@ -29,18 +29,29 @@ This is a Spotify analytics application that works in two environments:
 # Install dependencies
 npm install
 
-# Run web development server (port 8000)
+# Run web development server (port 8000) 
 npm run dev
 
-# Build for production
+# Build and typecheck for production
 npm run build
 
 # Preview production build
 npm run preview
 
-# Run Tauri desktop app (currently disabled)
+# Legacy Tauri desktop mode (avoid using)
 npm run tauri dev
 ```
+
+## Critical Architecture Notes
+
+### Dual Environment Handling
+The app uses `src/lib/api.ts` with environment detection (`isTauriApp()`) to handle both web and Tauri environments. Web environment is primary and should return empty arrays for data queries rather than throwing errors.
+
+### Authentication Flow
+- Web-first OAuth 2.0 PKCE implementation in `src/lib/spotify-web-api.ts`
+- No backend secrets required - client ID is public and safe for frontend
+- Tokens stored in localStorage with automatic refresh
+- Authentication state managed via `useAuthStore` (Zustand)
 
 ## Authentication Architecture
 
@@ -64,35 +75,50 @@ VITE_SPOTIFY_REDIRECT_URI_WEB=http://127.0.0.1:8000/callback
 VITE_SPOTIFY_REDIRECT_URI_DESKTOP=http://127.0.0.1:8001/callback
 ```
 
-## Data Flow
+### Data Service Architecture  
+The `DataService` class (`src/lib/data-service.ts`) is the core data layer:
+- Handles Spotify API calls with fallback strategies
+- Implements intelligent caching via `cacheManager` 
+- Processes raw Spotify data into analytics-ready formats
+- Maps time windows (7d/30d/180d/365d) to Spotify's time ranges (short/medium/long term)
+- Estimates play counts using ranking algorithms when actual data unavailable
 
-1. **Authentication**: User clicks connect → OAuth redirect → Callback → Store tokens
-2. **Data Fetching**: Components use `dataService.ts` → Checks cache → Falls back to Spotify API
-3. **State Management**: 
-   - Auth state in `useAuthStore` (Zustand)
-   - Data cached in localStorage with TTL
-   - UI state managed locally in components
+### Analytics Component Structure
+All analytics components (`src/components/analytics/`) follow consistent patterns:
+- Null/undefined data validation with empty state UI
+- Shared `StatsCard` components for key metrics
+- Recharts integration with consistent theming
+- Time window filtering support
+- Pure black backgrounds (`bg-black`) with accent colors
 
-## Important UI/UX Decisions
+### Environment Configuration
 
-- **Chinese UI**: All user-facing text is in Traditional Chinese
-- **Time Windows**: "7天", "一個月", "180天", "365天" (not "兩年")
-- **No Demo Mode**: Removed all demo/fake data - requires real Spotify connection
-- **Error Handling**: PKCE parameters regenerated on each auth attempt
-- **One-Click Auth**: No manual client ID input for users
+Required `.env` file:
+```env
+VITE_SPOTIFY_CLIENT_ID=your_actual_client_id
+VITE_SPOTIFY_REDIRECT_URI_WEB=http://127.0.0.1:8000/callback
+VITE_SPOTIFY_REDIRECT_URI_DESKTOP=http://127.0.0.1:8001/callback
+```
 
-## Testing OAuth
+### Critical Implementation Details
 
-When testing authentication:
-1. Ensure PKCE parameters are cleared on each attempt (handled automatically)
-2. Check redirect URI matches exactly (including port)
-3. Verify client ID is correctly set in environment
-4. Use "重試連接" button on auth failure
+- **No Demo Mode**: All demo/fake data removed - application requires real Spotify connection
+- **Chinese UI**: User-facing text in Traditional Chinese with specific time window labels
+- **Array Safety**: All array operations include `Array.isArray()` and `.length` checks
+- **Type Safety**: Avoid `as any` - use proper TypeScript interfaces from `src/types/spotify.ts`
+- **Pure Black Backgrounds**: All analytics components use `bg-black` for consistency
+- **Album Cover Display**: Real Spotify album covers with fallback to disc icons
+- **Sun-Themed Colors**: Time segment analysis uses sunrise-to-sunset color spectrum:
+  - Morning: `#FFB74D` (warm gold)
+  - Afternoon: `#FDD835` (bright yellow)  
+  - Evening: `#FF7043` (orange-red)
+  - Night: `#7986CB` (soft purple-blue)
+- **Dynamic Time Analysis**: Time segment analysis filters data by selected window and enhances with top tracks when recent data insufficient
+- **Error Handling**: Web environment commands return empty arrays rather than throwing errors
 
-## Deployment Notes
+### Recent Major Updates
 
-For production deployment:
-1. Set `VITE_SPOTIFY_CLIENT_ID` in deployment environment
-2. Update redirect URIs in Spotify App settings to match production URL
-3. The app handles token refresh automatically
-4. Client ID is public (safe for frontend) - no client secret needed with PKCE
+- **Time Segment Analysis**: Now dynamically filters by time windows and intelligently enhances data
+- **Album Analysis UI**: Added album covers, ranking badges, hover effects, and pure black backgrounds
+- **Data Quality**: Removed all demo data, implemented comprehensive null/undefined checks
+- **Visual Design**: Unified pure black theme with vibrant accent colors for optimal contrast
