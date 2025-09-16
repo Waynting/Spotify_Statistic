@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { spotifyApi } from '../lib/api'
-import { AlbumRow } from '../types'
 import { useAuthStore } from '../store/useAuthStore'
 import { Play, Clock, Info } from 'lucide-react'
 
@@ -15,13 +14,13 @@ const timeWindows = [
 ]
 
 export default function Shelf() {
-  const [window, setWindow] = useState('30d')
+  const [timeWindow, setTimeWindow] = useState('30d')
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   
   const { data: albums, isLoading, error } = useQuery({
-    queryKey: ['topAlbums', window],
-    queryFn: () => spotifyApi.data.queryTopAlbumsWindow(window),
+    queryKey: ['topAlbums', timeWindow],
+    queryFn: () => spotifyApi.data.queryTopAlbumsWindow(timeWindow),
     retry: 1, // Only retry once to avoid long loading times
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -34,21 +33,11 @@ export default function Shelf() {
       return
     }
     
-    try {
-      const devices = await spotifyApi.player.getDevices()
-      const activeDevice = devices.find((d) => d.is_active) || devices[0]
-      
-      if (!activeDevice) {
-        alert('請開啟 Spotify 應用程式')
-        return
-      }
-      
-      await spotifyApi.player.playContext(
-        activeDevice.id,
-        `spotify:album:${albumId}`
-      )
-    } catch (error) {
-      console.error('Play error:', error)
+    // For web version, open Spotify web player
+    const spotifyUrl = `https://open.spotify.com/album/${albumId}`
+    const newWindow = window.open(spotifyUrl, '_blank')
+    if (!newWindow) {
+      alert('請允許彈出視窗以開啟 Spotify')
     }
   }
 
@@ -61,8 +50,8 @@ export default function Shelf() {
           {timeWindows.map((tw) => (
             <button
               key={tw.value}
-              onClick={() => setWindow(tw.value)}
-              className={`pill ${window === tw.value ? 'active' : ''}`}
+              onClick={() => setTimeWindow(tw.value)}
+              className={`pill ${timeWindow === tw.value ? 'active' : ''}`}
             >
               {tw.label}
             </button>
@@ -77,8 +66,8 @@ export default function Shelf() {
       {error && (
         <div className="text-center py-12">
           <div className="bg-gray-900 rounded-lg p-6 inline-block">
-            <p className="text-yellow-400 font-medium mb-2">無法連接到後端服務</p>
-            <p className="text-gray-400 text-sm mb-4">使用範例資料</p>
+            <p className="text-yellow-400 font-medium mb-2">無法載入音樂資料</p>
+            <p className="text-gray-400 text-sm mb-4">請確認已連接 Spotify</p>
             <button
               onClick={() => (window as any).location.reload()}
               className="btn btn-secondary"
@@ -89,7 +78,7 @@ export default function Shelf() {
         </div>
       )}
       
-      {albums && (
+      {albums && Array.isArray(albums) && albums.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {albums.map((album) => (
             <div
@@ -122,22 +111,28 @@ export default function Shelf() {
             </div>
           ))}
         </div>
+      ) : !isLoading && !error && isAuthenticated && (
+        <div className="text-center py-20">
+          <div className="text-6xl mb-4">🎵</div>
+          <h2 className="text-2xl font-semibold mb-2 text-white">沒有專輯資料</h2>
+          <p className="text-gray-400">在選擇的時間範圍內沒有找到專輯資料</p>
+        </div>
       )}
       
       {!isAuthenticated && (
         <div className="mt-8 bg-gray-900 rounded-lg p-4 flex items-start gap-3">
           <Info className="text-blue-400 mt-1" size={20} />
           <div className="text-sm">
-            <p className="text-gray-300 font-medium">使用範例資料</p>
+            <p className="text-gray-300 font-medium">需要 Spotify 連接</p>
             <p className="text-gray-400 mt-1">
-              目前顯示的是範例資料。
+              請先
               <button
                 onClick={() => navigate('/settings')}
                 className="text-white hover:underline ml-1"
               >
                 連接 Spotify
               </button>
-              以查看你的真實聆聽記錄。
+              以查看你的聆聽記錄。
             </p>
           </div>
         </div>

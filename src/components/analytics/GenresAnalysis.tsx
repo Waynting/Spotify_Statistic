@@ -68,7 +68,7 @@ export default function GenresAnalysis({ data }: GenresAnalysisProps) {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="bg-black border border-gray-800 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-6">曲風分佈圓餅圖</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -102,7 +102,7 @@ export default function GenresAnalysis({ data }: GenresAnalysisProps) {
         </div>
 
         {/* Bar Chart */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <div className="bg-black border border-gray-800 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-6">熱門曲風排行</h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">

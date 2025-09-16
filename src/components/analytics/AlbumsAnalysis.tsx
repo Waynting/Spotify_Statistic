@@ -67,7 +67,7 @@ export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisP
       </div>
 
       {/* Top Albums Chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">熱門專輯播放次數</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -102,21 +102,54 @@ export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisP
       </div>
 
       {/* Albums Grid */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">專輯排行榜</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {topAlbums.map((album, index) => (
-            <div key={album.id} className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800 transition-colors">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center text-white font-bold">
-                  #{index + 1}
+            <div key={album.id} className="bg-gray-800/50 rounded-lg p-4 hover:bg-gray-800 transition-colors group">
+              <div className="flex items-start gap-4">
+                {/* Album Cover */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-700 rounded-lg overflow-hidden">
+                    {album.album_image ? (
+                      <img 
+                        src={album.album_image} 
+                        alt={album.album_name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          target.nextElementSibling!.classList.remove('hidden')
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center text-gray-500 ${album.album_image ? 'hidden' : ''}`}>
+                      <Disc size={24} />
+                    </div>
+                  </div>
+                  {/* Ranking badge */}
+                  <div className="absolute -top-2 -left-2 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {index + 1}
+                  </div>
+                  {/* Play overlay on hover */}
+                  <div className="absolute inset-0 bg-black bg-opacity-60 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Play className="w-6 h-6 text-white" fill="currentColor" />
+                  </div>
                 </div>
+                
+                {/* Album Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-white text-sm truncate">{album.album_name}</h4>
-                  <p className="text-xs text-gray-400 mt-1">{album.artist}</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>{album.plays} 次播放</span>
-                    <span>{Math.round(album.minutes)} 分鐘</span>
+                  <h4 className="font-semibold text-white text-sm mb-1 line-clamp-2">{album.album_name}</h4>
+                  <p className="text-xs text-gray-400 mb-2">{album.artist}</p>
+                  <div className="flex flex-col gap-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Play size={12} />
+                      <span>{album.plays} 次播放</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={12} />
+                      <span>{Math.round(album.minutes)} 分鐘</span>
+                    </div>
                   </div>
                 </div>
               </div>

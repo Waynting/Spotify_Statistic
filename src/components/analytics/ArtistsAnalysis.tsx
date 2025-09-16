@@ -67,7 +67,7 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
       </div>
 
       {/* Top Artists Chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">熱門藝人播放次數</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -102,7 +102,7 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
       </div>
 
       {/* Artists Grid */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">藝人排行榜</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {topArtists.map((artist, index) => (

@@ -30,7 +30,7 @@ interface SpotifyTrackAnalysis {
 
 class DataService {
   // Helper method to create data source info
-  private createSourceInfo(source: 'spotify' | 'demo' | 'cache'): DataSourceInfo {
+  private createSourceInfo(source: 'spotify' | 'cache'): DataSourceInfo {
     return {
       source,
       timestamp: Date.now(),
@@ -102,10 +102,10 @@ class DataService {
     console.log('🔐 Authentication status:', spotifyWebAPI.isAuthenticated())
     
     try {
-      // 如果離線或 API 不可用，使用 demo data
+      // 如果離線或 API 不可用，返回空陣列
       if (!spotifyWebAPI.isAuthenticated()) {
-        console.log('⚠️ Not authenticated, using demo data')
-        return this.getDemoAlbumsData(window)
+        console.log('⚠️ Not authenticated, returning empty data')
+        return []
       }
 
       // Map time windows to Spotify time ranges using centralized method
@@ -173,10 +173,10 @@ class DataService {
 
     } catch (error) {
       console.error('❌ Failed to get Spotify data:', error)
-      console.log('🔄 Falling back to demo data')
+      console.log('🔄 Returning empty data due to error')
       
-      // 最後退回到 demo 數據
-      return this.getDemoAlbumsData(window)
+      // 失敗時返回空陣列
+      return []
     }
   }
 
@@ -208,14 +208,10 @@ class DataService {
 
     try {
       if (!spotifyWebAPI.isAuthenticated()) {
-        const demoData = this.getDemoAnalyticsData(window, analysisType)
         const response = {
-          data: demoData,
-          sourceInfo: this.createSourceInfo('demo')
+          data: [],
+          sourceInfo: this.createSourceInfo('spotify')
         }
-        
-        // Cache demo data for shorter time
-        cacheManager.cacheAnalytics(window, analysisType, response, 2 * 60 * 1000) // 2 minutes
         return response
       }
 
@@ -249,15 +245,11 @@ class DataService {
       return response
       
     } catch (error) {
-      console.warn('Failed to get analytics data, falling back to demo:', error)
-      const demoData = this.getDemoAnalyticsData(window, analysisType)
+      console.warn('Failed to get analytics data:', error)
       const response = {
-        data: demoData,
-        sourceInfo: this.createSourceInfo('demo')
+        data: [],
+        sourceInfo: this.createSourceInfo('spotify')
       }
-      
-      // Cache fallback data for short time
-      cacheManager.cacheAnalytics(window, analysisType, response, 1 * 60 * 1000) // 1 minute
       return response
     }
   }
@@ -394,7 +386,7 @@ class DataService {
         id: artist.id,
         name: artist.name,
         genres: Array.isArray(artist.genres) ? artist.genres.slice(0, 3) : [],
-        followers: (artist as any).followers?.total || 0,
+        followers: artist.followers?.total || 0,
         popularity: artist.popularity,
         plays: adjustedPlays,
         minutes: adjustedMinutes,
@@ -437,63 +429,6 @@ class DataService {
       }))
   }
 
-  private getDemoAlbumsData(window: string): AlbumRow[] {
-    const multiplier = this.getWindowMultiplier(window)
-    
-    const demoAlbums = [
-      { album_id: '1', album_name: 'A Night at the Opera - Queen', album_image: '', plays: Math.round(45 * multiplier), minutes: Math.round(180 * multiplier / 10), last_played: Date.now() },
-      { album_id: '2', album_name: 'Hotel California - Eagles', album_image: '', plays: Math.round(42 * multiplier), minutes: Math.round(170 * multiplier / 10), last_played: Date.now() },
-      { album_id: '3', album_name: 'Led Zeppelin IV - Led Zeppelin', album_image: '', plays: Math.round(40 * multiplier), minutes: Math.round(160 * multiplier / 10), last_played: Date.now() },
-      { album_id: '4', album_name: 'Imagine - John Lennon', album_image: '', plays: Math.round(38 * multiplier), minutes: Math.round(150 * multiplier / 10), last_played: Date.now() },
-      { album_id: '5', album_name: 'Appetite for Destruction - Guns N\' Roses', album_image: '', plays: Math.round(35 * multiplier), minutes: Math.round(140 * multiplier / 10), last_played: Date.now() },
-      { album_id: '6', album_name: 'The Dark Side of the Moon - Pink Floyd', album_image: '', plays: Math.round(32 * multiplier), minutes: Math.round(130 * multiplier / 10), last_played: Date.now() },
-      { album_id: '7', album_name: 'Back in Black - AC/DC', album_image: '', plays: Math.round(30 * multiplier), minutes: Math.round(120 * multiplier / 10), last_played: Date.now() },
-      { album_id: '8', album_name: 'Thriller - Michael Jackson', album_image: '', plays: Math.round(28 * multiplier), minutes: Math.round(110 * multiplier / 10), last_played: Date.now() }
-    ]
-    
-    return demoAlbums.slice(0, 15)
-  }
-
-  private getDemoAnalyticsData(window: string, analysisType: string): (AnalyticsTrackData | AnalyticsAlbumData | AnalyticsArtistData | AnalyticsGenreData)[] {
-    const multiplier = this.getWindowMultiplier(window)
-    
-    switch (analysisType) {
-      case 'tracks':
-        return [
-          { id: '1', name: 'Bohemian Rhapsody', artist: 'Queen', album: 'A Night at the Opera', plays: Math.round(45 * multiplier), duration: 6, popularity: 95 },
-          { id: '2', name: 'Hotel California', artist: 'Eagles', album: 'Hotel California', plays: Math.round(42 * multiplier), duration: 7, popularity: 92 },
-          { id: '3', name: 'Stairway to Heaven', artist: 'Led Zeppelin', album: 'Led Zeppelin IV', plays: Math.round(40 * multiplier), duration: 8, popularity: 94 },
-          { id: '4', name: 'Imagine', artist: 'John Lennon', album: 'Imagine', plays: Math.round(38 * multiplier), duration: 3, popularity: 90 },
-          { id: '5', name: 'Sweet Child O\' Mine', artist: 'Guns N\' Roses', album: 'Appetite for Destruction', plays: Math.round(35 * multiplier), duration: 6, popularity: 88 }
-        ]
-      
-      case 'artists':
-        return [
-          { id: '1', name: 'Queen', genres: ['rock', 'classic rock'], followers: 12500000, plays: Math.round(120 * multiplier), popularity: 95, minutes: Math.round(480 * multiplier / 10) },
-          { id: '2', name: 'The Beatles', genres: ['rock', 'pop'], followers: 15000000, plays: Math.round(115 * multiplier), popularity: 98, minutes: Math.round(460 * multiplier / 10) },
-          { id: '3', name: 'Led Zeppelin', genres: ['rock', 'hard rock'], followers: 8000000, plays: Math.round(110 * multiplier), popularity: 92, minutes: Math.round(550 * multiplier / 10) },
-          { id: '4', name: 'Pink Floyd', genres: ['progressive rock', 'psychedelic rock'], followers: 9500000, plays: Math.round(105 * multiplier), popularity: 94, minutes: Math.round(630 * multiplier / 10) },
-          { id: '5', name: 'AC/DC', genres: ['hard rock', 'heavy metal'], followers: 7200000, plays: Math.round(100 * multiplier), popularity: 89, minutes: Math.round(400 * multiplier / 10) }
-        ]
-      
-      case 'genres':
-        return [
-          { name: 'rock', count: Math.round(25 * multiplier), percentage: 35 },
-          { name: 'pop', count: Math.round(20 * multiplier), percentage: 28 },
-          { name: 'electronic', count: Math.round(15 * multiplier), percentage: 21 },
-          { name: 'hip hop', count: Math.round(12 * multiplier), percentage: 17 },
-          { name: 'jazz', count: Math.round(8 * multiplier), percentage: 11 },
-          { name: 'classical', count: Math.round(5 * multiplier), percentage: 7 }
-        ]
-      
-      default:
-        // For demo data, return track data as default  
-        return [
-          { id: '1', name: 'Demo Track', artist: 'Demo Artist', album: 'Demo Album', plays: Math.round(45 * multiplier), duration: 6, popularity: 95 } as AnalyticsTrackData
-        ]
-    }
-  }
-
   private getSpotifyTimeRange(window: string): SpotifyTimeRange {
     switch (window) {
       case '7d':
@@ -521,21 +456,17 @@ class DataService {
   }
 
   private getRecentTracksLimit(window: string): number {
-    // 根據時間窗口調整獲取的最近播放記錄數量
-    // Spotify API 限制最多50首，但我們可以根據需要調整
     switch (window) {
-      case '7d': return 50    // 7天
-      case '30d': return 50   // 30天
-      case '90d': return 50   // 90天
-      case '180d': return 50  // 180天
-      case '365d': return 50  // 365天
+      case '7d': return 50
+      case '30d': return 50
+      case '90d': return 50
+      case '180d': return 50
+      case '365d': return 50
       default: return 50
     }
   }
 
-  // 新增時間段分析方法
   public async getTimeSegmentAnalysis(window: string = '30d'): Promise<AnalyticsResponse<TimeSegmentData>> {
-    // Check cache first (include window in cache key)
     const cached = cacheManager.getCachedTimeSegments<TimeSegmentData>(window)
     if (cached) {
       return {
@@ -547,28 +478,22 @@ class DataService {
     try {
       if (!spotifyWebAPI.isAuthenticated()) {
         const response = {
-          data: this.getDemoTimeSegmentData(window),
-          sourceInfo: this.createSourceInfo('demo')
+          data: [],
+          sourceInfo: this.createSourceInfo('spotify')
         }
-        
-        // Cache demo data for shorter time
-        cacheManager.cacheTimeSegments(response, 2 * 60 * 1000, window) // 2 minutes
         return response
       }
 
-      // 根據時間窗口獲取不同數量的最近播放記錄
       const limit = this.getRecentTracksLimit(window)
       const recentTracks = await spotifyWebAPI.getRecentlyPlayed(limit)
       
-      // 定義時間段
       const timeSegments = {
-        morning: { label: '早上 (6:00-12:00)', tracks: [] as any[], genres: new Map(), artists: new Map() },
-        afternoon: { label: '下午 (12:00-18:00)', tracks: [] as any[], genres: new Map(), artists: new Map() },
-        evening: { label: '晚上 (18:00-24:00)', tracks: [] as any[], genres: new Map(), artists: new Map() },
-        night: { label: '半夜 (0:00-6:00)', tracks: [] as any[], genres: new Map(), artists: new Map() }
+        morning: { label: '早上 (6:00-12:00)', tracks: [] as any[], artists: new Map() },
+        afternoon: { label: '下午 (12:00-18:00)', tracks: [] as any[], artists: new Map() },
+        evening: { label: '晚上 (18:00-24:00)', tracks: [] as any[], artists: new Map() },
+        night: { label: '半夜 (0:00-6:00)', tracks: [] as any[], artists: new Map() }
       }
 
-      // 分析每個播放記錄的時間段
       recentTracks.items.forEach(item => {
         const playedAt = new Date(item.played_at)
         const hour = playedAt.getHours()
@@ -585,7 +510,6 @@ class DataService {
           segment = 'night'
         }
 
-        // 添加曲目到對應時間段
         timeSegments[segment].tracks.push({
           id: track.id,
           name: track.name,
@@ -595,19 +519,17 @@ class DataService {
           playedAt: item.played_at
         })
 
-        // 統計藝術家
         track.artists.forEach(artist => {
           const count = timeSegments[segment].artists.get(artist.name) || 0
           timeSegments[segment].artists.set(artist.name, count + 1)
         })
       })
 
-      // 轉換為前端需要的格式
       const segmentData = Object.entries(timeSegments).map(([key, data]) => ({
         segment: key as 'morning' | 'afternoon' | 'evening' | 'night',
         label: data.label,
         totalTracks: data.tracks.length,
-        tracks: data.tracks.slice(0, 10), // 只取前 10 首
+        tracks: data.tracks.slice(0, 10),
         topArtists: Array.from(data.artists.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 5)
@@ -620,82 +542,17 @@ class DataService {
         sourceInfo: this.createSourceInfo('spotify')
       }
       
-      // Cache real data for longer time
-      cacheManager.cacheTimeSegments(response, 5 * 60 * 1000) // 5 minutes
+      cacheManager.cacheTimeSegments(response, 5 * 60 * 1000)
       return response
 
     } catch (error) {
       console.warn('Failed to get time segment analysis:', error)
       const response = {
-        data: this.getDemoTimeSegmentData(),
-        sourceInfo: this.createSourceInfo('demo')
+        data: [],
+        sourceInfo: this.createSourceInfo('spotify')
       }
-      
-      // Cache fallback data for short time
-      cacheManager.cacheTimeSegments(response, 1 * 60 * 1000) // 1 minute
       return response
     }
-  }
-
-  private getDemoTimeSegmentData(window: string = '30d'): TimeSegmentData[] {
-    const multiplier = this.getWindowMultiplier(window)
-    
-    const baseTotals = { morning: 12, afternoon: 18, evening: 15, night: 5 }
-    const adjustedTotals = {
-      morning: Math.round(baseTotals.morning * multiplier),
-      afternoon: Math.round(baseTotals.afternoon * multiplier),
-      evening: Math.round(baseTotals.evening * multiplier),
-      night: Math.round(baseTotals.night * multiplier)
-    }
-    
-    const grandTotal = Object.values(adjustedTotals).reduce((sum, val) => sum + val, 0)
-    
-    return [
-      {
-        segment: 'morning' as const,
-        label: '早上 (6:00-12:00)',
-        totalTracks: adjustedTotals.morning,
-        tracks: [],
-        topArtists: [
-          { name: 'Taylor Swift', count: Math.round(3 * multiplier) }, 
-          { name: 'Ed Sheeran', count: Math.round(2 * multiplier) }
-        ],
-        percentage: Math.round((adjustedTotals.morning / grandTotal) * 100)
-      },
-      {
-        segment: 'afternoon' as const,
-        label: '下午 (12:00-18:00)',
-        totalTracks: adjustedTotals.afternoon,
-        tracks: [],
-        topArtists: [
-          { name: 'The Weeknd', count: Math.round(4 * multiplier) }, 
-          { name: 'Dua Lipa', count: Math.round(3 * multiplier) }
-        ],
-        percentage: Math.round((adjustedTotals.afternoon / grandTotal) * 100)
-      },
-      {
-        segment: 'evening' as const,
-        label: '晚上 (18:00-24:00)',
-        totalTracks: adjustedTotals.evening,
-        tracks: [],
-        topArtists: [
-          { name: 'Billie Eilish', count: Math.round(3 * multiplier) }, 
-          { name: 'Post Malone', count: Math.round(2 * multiplier) }
-        ],
-        percentage: Math.round((adjustedTotals.evening / grandTotal) * 100)
-      },
-      {
-        segment: 'night' as const,
-        label: '半夜 (0:00-6:00)',
-        totalTracks: adjustedTotals.night,
-        tracks: [],
-        topArtists: [
-          { name: 'Lo-fi Hip Hop', count: Math.round(2 * multiplier) }, 
-          { name: 'Ambient', count: Math.round(1 * multiplier) }
-        ],
-        percentage: Math.round((adjustedTotals.night / grandTotal) * 100)
-      }
-    ]
   }
 }
 

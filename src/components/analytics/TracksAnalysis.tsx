@@ -67,7 +67,7 @@ export default function TracksAnalysis({ data, selectedWindow }: TracksAnalysisP
       </div>
 
       {/* Top Tracks Chart */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">熱門歌曲播放次數</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -102,7 +102,7 @@ export default function TracksAnalysis({ data, selectedWindow }: TracksAnalysisP
       </div>
 
       {/* Tracks List */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <div className="bg-black border border-gray-800 rounded-xl p-6">
         <h3 className="text-xl font-semibold text-white mb-6">歌曲排行榜</h3>
         <div className="space-y-3">
           {topTracks.map((track, index) => (
