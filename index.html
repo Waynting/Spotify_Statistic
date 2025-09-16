@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Crate - 你的音樂資料庫</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #0b0c0f; color: #e6e6e6; }
+      header { padding: 12px 16px; background: #11131a; border-bottom: 1px solid #22252f; position: sticky; top:0; }
+      .container { padding: 16px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 16px; }
+      .card { background:#141823; border:1px solid #22252f; border-radius: 12px; overflow: hidden; }
+      .thumb { aspect-ratio:1/1; width:100%; background:#0e1017; display:flex; align-items:center; justify-content:center; font-size:12px; color:#6c7486; }
+      .meta { padding: 8px 10px; }
+      .title { font-weight:600; font-size: 14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .sub { color:#9aa3b2; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .toolbar { display:flex; gap:8px; align-items:center; }
+      .btn { background:#1a1f2e; border:1px solid #2a3145; color:#e6e6e6; padding:8px 12px; border-radius:8px; cursor:pointer;}
+      .btn:disabled { opacity:0.6; cursor:not-allowed; }
+      .pill { padding:6px 10px; border-radius:999px; border:1px solid #2a3145; background:#101520; cursor:pointer;}
+      .pill.active { background:#223; border-color:#375; }
+      .row { display:flex; gap:8px; flex-wrap:wrap; }
+      .muted { color:#9aa3b2; font-size:12px; }
+      a { color:#7dd3fc; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
