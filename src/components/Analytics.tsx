@@ -14,6 +14,7 @@ import DataSourceIndicator from './analytics/DataSourceIndicator'
 import ErrorDisplay from './analytics/ErrorDisplay'
 import TimeWindowSelector from './analytics/TimeWindowSelector'
 import { TimeWindowOption } from './analytics/AnalyticsTypes'
+import { ANALYTICS_TIME_WINDOWS } from '../constants/timeWindows'
 
 // Analysis rendering components (would be split into separate files)
 import AlbumsAnalysis from './analytics/AlbumsAnalysis'
@@ -21,13 +22,6 @@ import TracksAnalysis from './analytics/TracksAnalysis'
 import ArtistsAnalysis from './analytics/ArtistsAnalysis'
 import GenresAnalysis from './analytics/GenresAnalysis'
 import TimeSegmentAnalysis from './analytics/TimeSegmentAnalysis'
-
-const TIME_WINDOWS: TimeWindowOption[] = [
-  { value: '7d', label: '一週', description: '過去七天' },
-  { value: '30d', label: '一個月', description: '過去三十天' },
-  { value: '180d', label: '180天', description: '過去六個月' },
-  { value: '365d', label: '365天', description: '過去一年' },
-]
 
 const ANALYSIS_TYPES = [
   { value: 'albums', label: '專輯分析', icon: BarChartIcon },
@@ -84,7 +78,9 @@ export default function Analytics() {
     queryFn: () => dataService.getTimeSegmentAnalysis(selectedWindow),
     retry: (failureCount, error) => shouldRetryForTimeSegments(error, failureCount),
     retryDelay: getRetryDelay,
-    enabled: selectedAnalysis === 'timeSegments'
+    enabled: selectedAnalysis === 'timeSegments',
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false
   })
 
   const currentData = selectedAnalysis === 'timeSegments' ? timeSegmentData?.data : analyticsData?.data
@@ -133,7 +129,7 @@ export default function Analytics() {
       case 'genres':
         return <GenresAnalysis data={safeCurrentData as AnalyticsGenreData[]} />
       case 'timeSegments':
-        return <TimeSegmentAnalysis data={safeCurrentData as TimeSegmentData[]} />
+        return <TimeSegmentAnalysis data={safeCurrentData as TimeSegmentData[]} selectedWindow={selectedWindow} />
       default:
         return <AlbumsAnalysis data={safeCurrentData as AnalyticsAlbumData[]} selectedWindow={selectedWindow} />
     }
@@ -249,7 +245,7 @@ export default function Analytics() {
           onWindowChange={setSelectedWindow}
           isMenuOpen={isTimeWindowMenuOpen}
           onMenuToggle={() => setIsTimeWindowMenuOpen(!isTimeWindowMenuOpen)}
-          timeWindows={TIME_WINDOWS}
+          timeWindows={ANALYTICS_TIME_WINDOWS}
         />
 
         {/* Main Content */}

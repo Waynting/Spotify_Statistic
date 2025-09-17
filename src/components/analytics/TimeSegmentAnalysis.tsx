@@ -33,9 +33,10 @@ const getTimeSegmentTheme = (segment: string) => {
 
 interface TimeSegmentAnalysisProps {
   data: TimeSegmentData[]
+  selectedWindow: string
 }
 
-export default function TimeSegmentAnalysis({ data }: TimeSegmentAnalysisProps) {
+export default function TimeSegmentAnalysis({ data, selectedWindow }: TimeSegmentAnalysisProps) {
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
       <div className="text-center py-20">
@@ -93,8 +94,8 @@ export default function TimeSegmentAnalysis({ data }: TimeSegmentAnalysisProps) 
 
       {/* Time Distribution Chart */}
       <div className="bg-black border border-gray-800 rounded-xl p-6">
-        <h3 className="text-xl font-semibold text-white mb-6">時間段聆聽分佈</h3>
-        <div className="h-80">
+        <h3 className="text-xl font-semibold text-white mb-6 text-center">時間段聆聽分佈圓餅圖</h3>
+        <div className="h-[500px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -103,7 +104,7 @@ export default function TimeSegmentAnalysis({ data }: TimeSegmentAnalysisProps) 
                 cy="50%"
                 labelLine={false}
                 label={({ name, percentage }) => `${name}: ${percentage}%`}
-                outerRadius={100}
+                outerRadius={200}
                 fill="#8884d8"
                 dataKey="value"
                 nameKey="name"

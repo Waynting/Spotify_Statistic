@@ -16,7 +16,7 @@ export default function Layout() {
   const navItems = [
     { to: '/analytics', icon: BarChart3, label: '數據分析', ariaLabel: '前往數據分析頁面' },
     { to: '/albums', icon: Library, label: '唱片櫃', ariaLabel: '前往唱片櫃頁面' },
-    { to: '/crates', icon: Folders, label: '歌單匯入', ariaLabel: '前往歌單匯入頁面' },
+    { to: '/crates', icon: Folders, label: '數據快照', ariaLabel: '前往數據快照頁面' },
     { to: '/settings', icon: SettingsIcon, label: '設定', ariaLabel: '前往設定頁面' },
   ]
 

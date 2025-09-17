@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import config from '../lib/config'
 import { LogOut, Music, ExternalLink, Wifi, AlertTriangle, Loader2, Bug, RefreshCw } from 'lucide-react'
-import SpotifyPlayer from './SpotifyPlayer'
 import { authDebugger, AuthDebugInfo } from '../lib/auth-debug'
 
 export default function Settings() {
@@ -281,13 +280,6 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Spotify Player Section */}
-        {isAuthenticated && (
-          <section className="bg-black border border-gray-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-white">播放控制</h2>
-            <SpotifyPlayer />
-          </section>
-        )}
 
       </div>
     </div>

@@ -1,26 +1,19 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { spotifyApi } from '../lib/api'
+import { dataService } from '../lib/data-service'
 import { useAuthStore } from '../store/useAuthStore'
 import { Play, Clock, Info } from 'lucide-react'
-
-const timeWindows = [
-  { value: '7d', label: '7天' },
-  { value: '30d', label: '一個月' },
-  { value: '90d', label: '3個月' },
-  { value: '180d', label: '半年' },
-  { value: '365d', label: '一年' },
-]
+import { TIME_WINDOWS, DEFAULT_TIME_WINDOW } from '../constants/timeWindows'
 
 export default function Shelf() {
-  const [timeWindow, setTimeWindow] = useState('30d')
+  const [timeWindow, setTimeWindow] = useState(DEFAULT_TIME_WINDOW)
   const { isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   
   const { data: albums, isLoading, error } = useQuery({
-    queryKey: ['topAlbums', timeWindow],
-    queryFn: () => spotifyApi.data.queryTopAlbumsWindow(timeWindow),
+    queryKey: ['albums', timeWindow],
+    queryFn: () => dataService.getTopAlbums(timeWindow),
     retry: 1, // Only retry once to avoid long loading times
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
@@ -47,7 +40,7 @@ export default function Shelf() {
         <h1 className="text-3xl font-bold">唱片櫃</h1>
         
         <div className="flex gap-2">
-          {timeWindows.map((tw) => (
+          {TIME_WINDOWS.map((tw) => (
             <button
               key={tw.value}
               onClick={() => setTimeWindow(tw.value)}

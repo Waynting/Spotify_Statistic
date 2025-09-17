@@ -24,8 +24,8 @@ export default function TracksAnalysis({ data, selectedWindow }: TracksAnalysisP
   const topTracks = data.slice(0, 10)
   const totalPlays = data.reduce((sum, track) => sum + track.plays, 0)
   const totalMinutes = data.reduce((sum, track) => sum + (track.duration * track.plays), 0)
-  const timeInfo = formatTimeByWindow(totalMinutes, selectedWindow)
-  const avgPopularity = Math.round(data.reduce((sum, track) => sum + track.popularity, 0) / data.length)
+  const totalHours = Math.round(totalMinutes / 60 * 10) / 10 // 保留一位小數
+  const avgPopularity = data.length > 0 ? Math.round(data.reduce((sum, track) => sum + track.popularity, 0) / data.length) : 0
 
   const chartData = topTracks.map(track => ({
     name: track.name.length > 15 ? track.name.substring(0, 15) + '...' : track.name,
@@ -53,8 +53,8 @@ export default function TracksAnalysis({ data, selectedWindow }: TracksAnalysisP
         <StatsCard
           icon={Clock}
           title="總聆聽時間"
-          value={timeInfo.value}
-          subtitle={timeInfo.subtitle}
+          value={`${totalHours}`}
+          subtitle="小時"
           color="text-blue-400"
         />
         <StatsCard

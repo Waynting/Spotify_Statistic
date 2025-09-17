@@ -6,14 +6,7 @@ import { Play, Clock, Calendar, Headphones, TrendingUp, RefreshCw, Loader2, Down
 import { exportToJSON, exportToCSV, generateMarkdownReport } from '../lib/export-utils'
 import UserProfile from './UserProfile'
 import SearchFilter from './SearchFilter'
-
-const timeWindows = [
-  { value: '7d', label: '7天' },
-  { value: '30d', label: '一個月' },
-  { value: '90d', label: '3個月' },
-  { value: '180d', label: '半年' },
-  { value: '365d', label: '一年' },
-]
+import { TIME_WINDOWS, DEFAULT_TIME_WINDOW } from '../constants/timeWindows'
 
 const sortOptions = [
   { value: 'plays', label: '播放次數' },
@@ -22,7 +15,7 @@ const sortOptions = [
 ]
 
 export default function Albums() {
-  const [window, setWindow] = useState('30d')
+  const [window, setWindow] = useState(DEFAULT_TIME_WINDOW)
   const [sortBy, setSortBy] = useState('plays')
   const [filteredAlbums, setFilteredAlbums] = useState<AlbumRow[]>([])
   
@@ -142,7 +135,7 @@ export default function Albums() {
                 時間範圍:
               </span>
               <div className="flex gap-1" role="tablist" aria-label="時間範圍選擇">
-                {timeWindows.map((tw) => (
+                {TIME_WINDOWS.map((tw) => (
                   <button
                     key={tw.value}
                     onClick={() => setWindow(tw.value)}
@@ -331,7 +324,7 @@ export default function Albums() {
         <div className="bg-gray-900 rounded-lg overflow-hidden" role="region" aria-label="專輯排行榜">
           <div className="p-4 md:p-6 border-b border-gray-800">
             <h2 className="text-lg md:text-xl font-semibold text-white">
-              專輯排行榜 ({timeWindows.find(w => w.value === window)?.label}) - 按{sortOptions.find(o => o.value === sortBy)?.label}排序
+              專輯排行榜 ({TIME_WINDOWS.find(w => w.value === window)?.label}) - 按{sortOptions.find(o => o.value === sortBy)?.label}排序
             </h2>
           </div>
           

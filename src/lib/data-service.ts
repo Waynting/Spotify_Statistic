@@ -259,6 +259,7 @@ class DataService {
     
     try {
       // 獲取更多最近播放記錄以提供準確的播放次數
+      // 注意：Spotify API 限制每次最多只能獲取 50 首歌曲
       const [topTracks, recentTracks] = await Promise.all([
         spotifyWebAPI.getTopTracks(timeRange, 50),
         // 嘗試獲取更多最近播放記錄
@@ -277,7 +278,7 @@ class DataService {
         playCountMap.set(trackId, (playCountMap.get(trackId) || 0) + 1)
       })
       
-      return topTracks.items.map((track, index) => {
+      const tracksWithPlays = topTracks.items.map((track, index) => {
         // 使用實際播放次數，如果沒有記錄則根據排名和熱度估算
         let estimatedPlays = playCountMap.get(track.id)
         
@@ -304,11 +305,14 @@ class DataService {
           imageUrl: track.album.images?.[0]?.url
         }
       })
+      
+      // 按實際播放次數重新排序
+      return tracksWithPlays.sort((a, b) => b.plays - a.plays)
     } catch (error) {
       console.error('Error in getTracksAnalysis:', error)
       // 返回帶有估算播放次數的fallback數據
       const topTracks = await spotifyWebAPI.getTopTracks(timeRange, 50)
-      return topTracks.items.map((track, index) => {
+      const fallbackTracks = topTracks.items.map((track, index) => {
         const rankingFactor = Math.max(1, 50 - index)
         const windowMultiplier = this.getWindowMultiplier(window) / 4
         const estimatedPlays = Math.max(Math.round(rankingFactor * windowMultiplier), 5)
@@ -324,6 +328,9 @@ class DataService {
           imageUrl: track.album.images?.[0]?.url
         }
       })
+      
+      // 按播放次數排序
+      return fallbackTracks.sort((a, b) => b.plays - a.plays)
     }
   }
 
@@ -351,6 +358,7 @@ class DataService {
     const timeRange = this.getSpotifyTimeRange(window)
     const windowMultiplier = this.getWindowMultiplier(window)
     
+    // 注意：Spotify API 限制每次最多只能獲取 50 位藝人
     const [topArtists, recentTracks] = await Promise.all([
       spotifyWebAPI.getTopArtists(timeRange, 50),
       spotifyWebAPI.getRecentlyPlayed(50).catch(() => ({ items: [] }))
@@ -367,7 +375,7 @@ class DataService {
       })
     })
     
-    const result = topArtists.items.map((artist, index) => {
+    const artistsWithPlays = topArtists.items.map((artist, index) => {
       const basePlayCount = artistPlayCount.get(artist.id) || 1
       const basePlayTime = artistPlayTime.get(artist.id) || 3 // 預設3分鐘
       const rankingBonus = Math.max(1, 50 - index)
@@ -393,6 +401,9 @@ class DataService {
         imageUrl: artist.images?.[0]?.url
       }
     })
+    
+    // 按實際播放次數重新排序
+    const result = artistsWithPlays.sort((a, b) => b.plays - a.plays)
     
     const totalPlays = result.reduce((sum, artist) => sum + artist.plays, 0)
     const totalMinutes = result.reduce((sum, artist) => sum + (artist.minutes || 0), 0)

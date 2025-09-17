@@ -24,8 +24,8 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
   const topArtists = data.slice(0, 8)
   const totalPlays = data.reduce((sum, artist) => sum + artist.plays, 0)
   const totalMinutes = data.reduce((sum, artist) => sum + (artist.minutes || 0), 0)
-  const timeInfo = formatTimeByWindow(totalMinutes, selectedWindow)
-  const avgPopularity = Math.round(data.reduce((sum, artist) => sum + artist.popularity, 0) / data.length)
+  const totalHours = Math.round(totalMinutes / 60 * 10) / 10 // 保留一位小數
+  const avgPopularity = data.length > 0 ? Math.round(data.reduce((sum, artist) => sum + artist.popularity, 0) / data.length) : 0
 
   const chartData = topArtists.map(artist => ({
     name: artist.name.length > 12 ? artist.name.substring(0, 12) + '...' : artist.name,
@@ -53,8 +53,8 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
         <StatsCard
           icon={Clock}
           title="總聆聽時間"
-          value={timeInfo.value}
-          subtitle={timeInfo.subtitle}
+          value={`${totalHours}`}
+          subtitle="小時"
           color="text-blue-400"
         />
         <StatsCard
