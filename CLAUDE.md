@@ -16,12 +16,14 @@ The application follows a modular analytics architecture where components are sp
 - **Authentication**: Spotify OAuth 2.0 with PKCE flow (web-native, no backend required)
 - **Charts**: Recharts with custom theming
 - **Icons**: Lucide React
+- **Screenshots**: html2canvas for data snapshot generation
 - **Styling**: Pure black backgrounds with vibrant accent colors
 
 ### Core Features
 1. **唱片櫃 (Album Shelf)**: Visual grid with album covers, play counts, time filtering
 2. **聆聽分析 (Analytics)**: Modular analysis components for different data types
-3. **設定 (Settings)**: One-click Spotify OAuth integration
+3. **數據快照 (Data Snapshot)**: Screenshot generation for social sharing with single-selection analysis
+4. **設定 (Settings)**: One-click Spotify OAuth integration
 
 ## Development Commands
 
@@ -116,9 +118,57 @@ VITE_SPOTIFY_REDIRECT_URI_DESKTOP=http://127.0.0.1:8001/callback
 - **Dynamic Time Analysis**: Time segment analysis filters data by selected window and enhances with top tracks when recent data insufficient
 - **Error Handling**: Web environment commands return empty arrays rather than throwing errors
 
+## Shared Constants and Configuration
+
+### Time Windows (`src/constants/timeWindows.ts`)
+Centralized time window configurations prevent inconsistencies across components:
+- `TIME_WINDOWS`: Standard options (7d/30d/90d/180d/365d) for most components
+- `ANALYTICS_TIME_WINDOWS`: Simplified options (7d/30d/180d/365d) for analytics page
+- `DEFAULT_TIME_WINDOW`: Consistent default ('30d') across the application
+
+### Query Key Patterns
+TanStack Query keys follow consistent patterns for optimal caching:
+- Albums: `['albums', timeWindow]` 
+- Analytics: `['analytics', timeWindow, analysisType]`
+- Time segments: `['timeSegments', timeWindow]`
+
+## Data Snapshot Architecture
+
+The `DataSnapshot` component (`src/components/DataSnapshot.tsx`) enables social sharing:
+- **Single Selection Mode**: Users select ONE analysis type at a time for clean screenshots
+- **Dynamic Container Sizing**: Automatically adjusts container dimensions for optimal chart display
+- **Screenshot Generation**: Uses html2canvas with optimized settings (scale: 2, black background)
+- **Genre Analysis Special Handling**: Larger container (800px width, 700px height) for pie chart visibility
+
+## Critical Implementation Patterns
+
+### Sorting Logic Validation
+Always verify sorting after data transformations - Spotify's ranking order may not match actual play counts:
+```typescript
+// Correct pattern - sort by calculated plays, not API order
+return tracksWithPlays.sort((a, b) => b.plays - a.plays)
+```
+
+### Genre Translation System
+Western music genres get Chinese labels for better UX:
+```typescript
+// Pattern in GenresAnalysis.tsx
+function getGenreLabel(genreName: string): string {
+  // Returns format: "流行 (pop)" for translated genres
+  // Returns original name for untranslated genres
+}
+```
+
+### Chart Responsiveness
+Different chart sizes for different contexts:
+- Normal view: Large pie charts (outerRadius: 200)  
+- Snapshot mode: Medium pie charts (outerRadius: 160) for better labels
+- Container heights: 500px for time analysis, 600px for genre snapshots
+
 ### Recent Major Updates
 
-- **Time Segment Analysis**: Now dynamically filters by time windows and intelligently enhances data
-- **Album Analysis UI**: Added album covers, ranking badges, hover effects, and pure black backgrounds
-- **Data Quality**: Removed all demo data, implemented comprehensive null/undefined checks
-- **Visual Design**: Unified pure black theme with vibrant accent colors for optimal contrast
+- **Sorting Bug Fixes**: Fixed critical issues where items with fewer plays ranked higher than items with more plays
+- **Data Snapshot Feature**: Replaced playlist import with screenshot generation for social sharing
+- **Time Analysis Enhancement**: Pie chart enlarged with centered titles following genre analysis design
+- **Genre Localization**: Added comprehensive Chinese translations for Western music genres
+- **Visual Consistency**: Unified pure black theme with optimized chart sizing

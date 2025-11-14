@@ -41,12 +41,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        spotify: {
-          green: '#1DB954',
-          black: '#191414',
-          gray: '#535353',
-          lightgray: '#B3B3B3',
-        }
+        // Removed spotify colors - using pure black/white theme only
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -42,7 +42,7 @@ export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisP
           title="專輯總數"
           value={data.length.toString()}
           subtitle="不同專輯"
-          color="text-purple-400"
+          color="text-gray-300"
         />
         <StatsCard
           icon={Play}
@@ -55,14 +55,14 @@ export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisP
           title="總聆聽時間"
           value={timeInfo.value}
           subtitle={timeInfo.subtitle}
-          color="text-blue-400"
+          color="text-gray-400"
         />
         <StatsCard
           icon={Volume2}
           title="最愛專輯"
           value={mostPlayedAlbum ? mostPlayedAlbum.plays.toString() : '0'}
           subtitle={mostPlayedAlbum ? "次播放" : "無數據"}
-          color="text-green-400"
+          color="text-gray-500"
         />
       </div>
 
@@ -128,7 +128,7 @@ export default function AlbumsAnalysis({ data, selectedWindow }: AlbumsAnalysisP
                     </div>
                   </div>
                   {/* Ranking badge */}
-                  <div className="absolute -top-2 -left-2 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  <div className="absolute -top-2 -left-2 w-6 h-6 bg-white rounded-full flex items-center justify-center text-black text-xs font-bold">
                     {index + 1}
                   </div>
                   {/* Play overlay on hover */}

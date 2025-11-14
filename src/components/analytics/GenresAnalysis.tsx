@@ -106,7 +106,7 @@ export default function GenresAnalysis({ data, isSnapshot = false }: GenresAnaly
           title="曲風總數"
           value={data.length.toString()}
           subtitle="不同曲風"
-          color="text-orange-400"
+          color="text-gray-300"
         />
         <StatsCard
           icon={TrendingUp}
@@ -120,7 +120,7 @@ export default function GenresAnalysis({ data, isSnapshot = false }: GenresAnaly
           title="音樂多樣性"
           value={`${diversityScore}%`}
           subtitle="曲風豐富度"
-          color="text-purple-400"
+          color="text-gray-400"
         />
       </div>
 

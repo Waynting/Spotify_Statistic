@@ -42,7 +42,7 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
           title="藝人總數"
           value={data.length.toString()}
           subtitle="不同藝人"
-          color="text-pink-400"
+          color="text-gray-300"
         />
         <StatsCard
           icon={Play}
@@ -55,14 +55,14 @@ export default function ArtistsAnalysis({ data, selectedWindow }: ArtistsAnalysi
           title="總聆聽時間"
           value={`${totalHours}`}
           subtitle="小時"
-          color="text-blue-400"
+          color="text-gray-400"
         />
         <StatsCard
           icon={Star}
           title="平均熱度"
           value={avgPopularity.toString()}
           subtitle="Spotify 評分"
-          color="text-yellow-400"
+          color="text-gray-500"
         />
       </div>
 

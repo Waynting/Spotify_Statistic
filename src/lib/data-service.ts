@@ -30,21 +30,44 @@ interface SpotifyTrackAnalysis {
 
 class DataService {
   // Helper method to create data source info
-  private createSourceInfo(source: 'spotify' | 'cache'): DataSourceInfo {
+  private createSourceInfo(
+    source: 'spotify' | 'cache',
+    options?: {
+      isEstimated?: boolean
+      actualDataPoints?: number
+      hasSimulatedData?: boolean
+      apiLimitations?: string[]
+    }
+  ): DataSourceInfo {
     return {
       source,
       timestamp: Date.now(),
       isOnline: navigator.onLine,
-      hasValidToken: spotifyWebAPI.isAuthenticated()
+      hasValidToken: spotifyWebAPI.isAuthenticated(),
+      isEstimated: options?.isEstimated,
+      actualDataPoints: options?.actualDataPoints,
+      hasSimulatedData: options?.hasSimulatedData,
+      apiLimitations: options?.apiLimitations
     }
   }
 
+  /**
+   * Analyzes Spotify track data and aggregates by album
+   * For 'recent' type: uses actual played_at timestamps
+   * For 'top' type: tracks are from Top Tracks API (no timestamps), so we use current time as approximation
+   */
   private analyzeSpotifyData(tracks: (SpotifyTrack | SpotifyRecentlyPlayedTrack)[], type: 'top' | 'recent'): SpotifyTrackAnalysis[] {
     const trackMap = new Map<string, SpotifyTrackAnalysis>()
     
     tracks.forEach((item, index) => {
       const track = type === 'recent' ? (item as SpotifyRecentlyPlayedTrack).track : (item as SpotifyTrack)
-      const playedAt = type === 'recent' ? new Date((item as SpotifyRecentlyPlayedTrack).played_at).getTime() : Date.now() - (index * 3600000)
+      
+      // For recent tracks, use actual played_at timestamp
+      // For top tracks, we don't have timestamps, so use current time as approximation
+      // Note: Top tracks are ranked by popularity, not by recency
+      const playedAt = type === 'recent' 
+        ? new Date((item as SpotifyRecentlyPlayedTrack).played_at).getTime() 
+        : Date.now() // Top tracks: use current time as approximation
       
       const albumId = track.album.id
       const key = `${albumId}`
@@ -64,34 +87,60 @@ class DataService {
       
       const analysis = trackMap.get(key)!
       analysis.playCount += 1
-      analysis.playTime += track.duration_ms / 1000
-      analysis.lastPlayed = Math.max(analysis.lastPlayed, playedAt)
+      analysis.playTime += track.duration_ms / 1000 // Convert ms to seconds
+      // For recent tracks, use actual timestamp; for top tracks, keep current time
+      if (type === 'recent') {
+        analysis.lastPlayed = Math.max(analysis.lastPlayed, playedAt)
+      }
     })
     
     return Array.from(trackMap.values())
   }
 
+  /**
+   * Converts track analysis data to album rows with play count estimates
+   * Prioritizes actual play counts from Recently Played API over estimates
+   */
   private convertToAlbumRows(analysis: SpotifyTrackAnalysis[], window: string): AlbumRow[] {
-    // Apply window-specific multiplier to estimated plays
     const windowMultiplier = this.getWindowMultiplier(window)
-    
+
     return analysis
       .sort((a, b) => b.playCount - a.playCount)
       .map((item, index) => {
-        // Calculate window-adjusted plays
         const basePlayCount = item.playCount
-        const rankingBonus = Math.max(1, 20 - index) // Top albums get bonus
-        const adjustedPlays = Math.max(
-          Math.round((basePlayCount * windowMultiplier) / 10 + rankingBonus),
-          Math.round(basePlayCount * (windowMultiplier / 20)) // Minimum scaled plays
-        )
         
+        // If we have actual play data, use it with minimal adjustment
+        // If we only have estimated data, apply conservative multiplier
+        let adjustedPlays: number
+        if (basePlayCount > 0) {
+          // Has actual play data: use it with minimal ranking-based adjustment
+          const rankingBonus = Math.max(0, 5 - (index / 3)) // Small bonus for top albums
+          adjustedPlays = Math.max(
+            Math.round(basePlayCount * (1 + windowMultiplier * 0.1) + rankingBonus),
+            basePlayCount // Never reduce actual play counts
+          )
+        } else {
+          // No actual data: conservative estimate based on ranking
+          const rankingFactor = Math.max(1, 20 - index)
+          adjustedPlays = Math.max(
+            Math.round(rankingFactor * windowMultiplier * 0.15),
+            1
+          )
+        }
+
+        // Calculate minutes: use actual play time if available, otherwise estimate
+        const actualMinutes = item.playTime / 60
+        const estimatedMinutes = adjustedPlays * 3 // Assume ~3 minutes per play
+        const minutes = actualMinutes > 0 
+          ? Math.round(actualMinutes * (1 + windowMultiplier * 0.1) * 100) / 100
+          : estimatedMinutes
+
         return {
           album_id: item.albumId,
           album_name: item.albumName,
           album_image: item.albumImageUrl,
           plays: adjustedPlays,
-          minutes: Math.round((item.playTime / 60) * (windowMultiplier / 10) * 100) / 100,
+          minutes: Math.round(minutes * 100) / 100,
           last_played: item.lastPlayed
         }
       })
@@ -114,41 +163,56 @@ class DataService {
 
       // Get both top tracks and recent tracks for better analysis
       console.log('📡 Fetching data from Spotify API...')
-      const [topTracks, recentTracks] = await Promise.all([
+      const maxRecentTracks = this.getMaxRecentTracks(window)
+
+      const [topTracks, recentTracksArray] = await Promise.all([
         spotifyWebAPI.getTopTracks(timeRange, 50).then(result => {
           console.log('✅ Top tracks fetched:', result.items?.length || 0, 'tracks')
           return result
         }),
-        spotifyWebAPI.getRecentlyPlayed(50).then(result => {
-          console.log('✅ Recent tracks fetched:', result.items?.length || 0, 'tracks')
-          return result
+        spotifyWebAPI.getRecentlyPlayedMultiple(maxRecentTracks).then(tracks => {
+          console.log('✅ Recent tracks fetched:', tracks.length, 'tracks across multiple requests')
+          return tracks
         }).catch(error => {
           console.log('⚠️ Recent tracks failed:', error.message)
-          return { items: [] }
+          return []
         })
       ])
 
-      // Analyze and combine data
-      const topAnalysis = this.analyzeSpotifyData(topTracks.items, 'top')
-      const recentAnalysis = this.analyzeSpotifyData(recentTracks.items, 'recent')
+      const recentTracks = { items: recentTracksArray }
 
-      // Merge analyses, prioritizing top tracks but including recent play data
+      // Analyze and combine data
+      // Filter recent tracks by time window first for accurate analysis
+      const windowMs = this.getWindowInMilliseconds(window)
+      const cutoffTime = Date.now() - windowMs
+      const filteredRecentTracks = recentTracks.items.filter(item => {
+        const playedAt = new Date(item.played_at).getTime()
+        return playedAt >= cutoffTime
+      })
+
+      const topAnalysis = this.analyzeSpotifyData(topTracks.items, 'top')
+      const recentAnalysis = this.analyzeSpotifyData(filteredRecentTracks, 'recent')
+
+      // Merge analyses, prioritizing actual play data from recent tracks
       const mergedMap = new Map<string, SpotifyTrackAnalysis>()
       
-      // Add top tracks first
-      topAnalysis.forEach(analysis => {
+      // Add recent tracks first (actual play data has priority)
+      recentAnalysis.forEach(analysis => {
         mergedMap.set(analysis.albumId, { ...analysis })
       })
       
-      // Enhance with recent play data
-      recentAnalysis.forEach(analysis => {
+      // Enhance with top tracks data (for albums not in recent plays)
+      topAnalysis.forEach(analysis => {
         const existing = mergedMap.get(analysis.albumId)
         if (existing) {
-          // Update play counts and last played time
-          existing.playCount = Math.max(existing.playCount, analysis.playCount)
-          existing.lastPlayed = Math.max(existing.lastPlayed, analysis.lastPlayed)
+          // If we have recent play data, keep it but update last played if needed
+          // Top tracks don't have timestamps, so we don't update lastPlayed from them
+          // Only add play count if it's higher (though recent data should be more accurate)
+          if (analysis.playCount > existing.playCount) {
+            existing.playCount = analysis.playCount
+          }
         } else {
-          // Add new albums from recent plays
+          // Add albums from top tracks that weren't in recent plays
           mergedMap.set(analysis.albumId, analysis)
         }
       })
@@ -156,18 +220,32 @@ class DataService {
       const result = this.convertToAlbumRows(Array.from(mergedMap.values()), window)
       console.log('📊 Processed albums:', result.length)
       
-      // Apply time window filtering for recent data
-      let filteredResult: AlbumRow[]
-      if (window === '7d') {
-        const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000)
-        filteredResult = result
-          .filter(album => (album.last_played || 0) > weekAgo)
-          .slice(0, 15)
-        console.log('📅 Filtered for 7d window:', filteredResult.length, 'albums')
-      } else {
-        filteredResult = result.slice(0, 15)
-      }
+      // Apply time window filtering for ALL windows based on last_played timestamp
+      const windowMs = this.getWindowInMilliseconds(window)
+      const cutoffTime = Date.now() - windowMs
       
+      // Filter albums by time window - only include albums played within the window
+      const filteredResult = result
+        .filter(album => {
+          // If we have actual play data with timestamp, use it
+          if (album.last_played && album.last_played > 0) {
+            return album.last_played >= cutoffTime
+          }
+          // If no timestamp, include it (from top tracks, which are already filtered by Spotify's time_range)
+          // But prioritize albums with actual play timestamps
+          return true
+        })
+        .sort((a, b) => {
+          // Sort by plays first, then by last_played timestamp
+          if (b.plays !== a.plays) {
+            return b.plays - a.plays
+          }
+          // If plays are equal, prefer albums with more recent timestamps
+          return (b.last_played || 0) - (a.last_played || 0)
+        })
+        .slice(0, 15)
+      
+      console.log(`📅 Filtered for ${window} window: ${filteredResult.length}/${result.length} albums within time range`)
       console.log('🎯 Final result:', filteredResult.length, 'albums')
       return filteredResult
 
@@ -197,14 +275,9 @@ class DataService {
 
   // 新增分析數據獲取方法
   public async getAnalyticsData(window: string, analysisType: string): Promise<AnalyticsResponse<AnalyticsTrackData | AnalyticsAlbumData | AnalyticsArtistData | AnalyticsGenreData>> {
-    // Check cache first
-    const cached = cacheManager.getCachedAnalytics(window, analysisType)
-    if (cached) {
-      return {
-        ...cached,
-        sourceInfo: { ...cached.sourceInfo, source: 'cache' }
-      } as AnalyticsResponse<AnalyticsTrackData | AnalyticsAlbumData | AnalyticsArtistData | AnalyticsGenreData>
-    }
+    // Note: We don't use cache here to ensure fresh data for each time window
+    // Cache is handled at the React Query level with proper invalidation
+    // Always fetch fresh data to ensure time window filtering is accurate
 
     try {
       if (!spotifyWebAPI.isAuthenticated()) {
@@ -234,12 +307,23 @@ class DataService {
         default:
           data = await this.getTracksAnalysis(window)
       }
-      
+      // Determine if data is estimated or actual
+      const hasActualData = data.some((item: any) => item.plays !== undefined)
+      const actualDataPoints = data.length
+
       const response = {
         data,
-        sourceInfo: this.createSourceInfo('spotify')
+        sourceInfo: this.createSourceInfo('spotify', {
+          isEstimated: true, // Most play counts are estimated due to API limitations
+          actualDataPoints,
+          apiLimitations: [
+            'Spotify API 限制每次最多 50 個項目',
+            '播放次數基於最近播放記錄和排名估算',
+            '實際數據可能因 API 限制而不完整'
+          ]
+        })
       }
-      
+
       // Cache real data for longer time
       cacheManager.cacheAnalytics(window, analysisType, response, 5 * 60 * 1000) // 5 minutes
       return response
@@ -256,67 +340,105 @@ class DataService {
 
   private async getTracksAnalysis(window: string): Promise<AnalyticsTrackData[]> {
     const timeRange = this.getSpotifyTimeRange(window)
-    
+
     try {
-      // 獲取更多最近播放記錄以提供準確的播放次數
-      // 注意：Spotify API 限制每次最多只能獲取 50 首歌曲
+      // 根據時間窗口決定要獲取多少最近播放記錄
+      const maxRecentTracks = this.getMaxRecentTracks(window)
+
+      // 並行獲取 top tracks 和多批次的 recent tracks
       const [topTracks, recentTracks] = await Promise.all([
         spotifyWebAPI.getTopTracks(timeRange, 50),
-        // 嘗試獲取更多最近播放記錄
-        Promise.all([
-          spotifyWebAPI.getRecentlyPlayed(50).catch(() => ({ items: [] })),
-          // 可以添加更多批次來獲取更多歷史記錄，但 Spotify API 限制為50條
-        ]).then(results => ({
-          items: results.flatMap(result => result.items)
-        }))
+        spotifyWebAPI.getRecentlyPlayedMultiple(maxRecentTracks)
       ])
-      
-      // 統計實際播放次數
+
+      console.log(`📊 Fetched ${recentTracks.length} recent tracks for analysis`)
+
+      // Filter recent tracks by time window for accurate counting
+      const windowMs = this.getWindowInMilliseconds(window)
+      const cutoffTime = Date.now() - windowMs
+      const filteredRecentTracks = recentTracks.filter(item => {
+        const playedAt = new Date(item.played_at).getTime()
+        return playedAt >= cutoffTime
+      })
+
+      console.log(`🎯 Filtered ${filteredRecentTracks.length}/${recentTracks.length} tracks within ${window} window`)
+
+      // 統計時間窗口內的實際播放次數（優先使用實際數據）
       const playCountMap = new Map<string, number>()
-      recentTracks.items.forEach(item => {
+      filteredRecentTracks.forEach(item => {
         const trackId = item.track.id
         playCountMap.set(trackId, (playCountMap.get(trackId) || 0) + 1)
       })
+
+      // Build a map of all tracks from filtered recent tracks (within time window)
+      const allTracksInWindow = new Map<string, AnalyticsTrackData>()
       
-      const tracksWithPlays = topTracks.items.map((track, index) => {
-        // 使用實際播放次數，如果沒有記錄則根據排名和熱度估算
-        let estimatedPlays = playCountMap.get(track.id)
+      // First, add all tracks from filtered recent tracks with actual play counts
+      filteredRecentTracks.forEach(item => {
+        const trackId = item.track.id
+        const existing = allTracksInWindow.get(trackId)
+        const playCount = playCountMap.get(trackId) || 0
         
-        if (!estimatedPlays) {
-          // 根據 top tracks 位置和 popularity 估算播放次數
-          const rankingFactor = Math.max(1, 50 - index) // 排名越高，播放次數越多
-          const popularityFactor = Math.max(1, Math.floor(track.popularity / 10)) // 熱度影響
-          const windowMultiplier = this.getWindowMultiplier(window) / 4 // 時間窗口影響
-          
-          estimatedPlays = Math.max(
-            Math.round(rankingFactor * popularityFactor * windowMultiplier),
-            5 // 最少5次播放
-          )
-        }
-        
-        return {
-          id: track.id,
-          name: track.name,
-          artist: track.artists[0]?.name || 'Unknown',
-          album: track.album.name,
-          plays: estimatedPlays,
-          duration: Math.round(track.duration_ms / 1000 / 60), // 分鐘
-          popularity: track.popularity,
-          imageUrl: track.album.images?.[0]?.url
+        if (!existing) {
+          allTracksInWindow.set(trackId, {
+            id: item.track.id,
+            name: item.track.name,
+            artist: item.track.artists[0]?.name || 'Unknown',
+            album: item.track.album.name,
+            plays: playCount,
+            duration: Math.round(item.track.duration_ms / 1000 / 60),
+            popularity: item.track.popularity,
+            imageUrl: item.track.album.images?.[0]?.url
+          })
+        } else {
+          // Update play count if higher
+          existing.plays = Math.max(existing.plays, playCount)
         }
       })
       
-      // 按實際播放次數重新排序
-      return tracksWithPlays.sort((a, b) => b.plays - a.plays)
+      // Then, add top tracks that might not be in recent plays
+      // But only if they're in the top tracks list (which Spotify filters by time_range)
+      topTracks.items.forEach((track, index) => {
+        const existing = allTracksInWindow.get(track.id)
+        
+        if (!existing) {
+          // Not in recent plays, estimate based on ranking
+          const rankingFactor = Math.max(1, 50 - index)
+          const windowMultiplier = this.getWindowMultiplier(window)
+          const estimatedPlays = Math.max(
+            Math.round(rankingFactor * windowMultiplier * 0.1),
+            1
+          )
+          
+          allTracksInWindow.set(track.id, {
+            id: track.id,
+            name: track.name,
+            artist: track.artists[0]?.name || 'Unknown',
+            album: track.album.name,
+            plays: estimatedPlays,
+            duration: Math.round(track.duration_ms / 1000 / 60),
+            popularity: track.popularity,
+            imageUrl: track.album.images?.[0]?.url
+          })
+        } else {
+          // Already exists from recent plays, keep the actual play count
+          // But update other fields if needed
+          existing.popularity = track.popularity
+        }
+      })
+
+      // Convert to array and sort by play count
+      return Array.from(allTracksInWindow.values()).sort((a, b) => b.plays - a.plays)
     } catch (error) {
       console.error('Error in getTracksAnalysis:', error)
-      // 返回帶有估算播放次數的fallback數據
+      // Fallback: 返回帶有保守估算的數據（當無法獲取實際播放記錄時）
       const topTracks = await spotifyWebAPI.getTopTracks(timeRange, 50)
       const fallbackTracks = topTracks.items.map((track, index) => {
+        // 基於排名的保守估算
         const rankingFactor = Math.max(1, 50 - index)
-        const windowMultiplier = this.getWindowMultiplier(window) / 4
-        const estimatedPlays = Math.max(Math.round(rankingFactor * windowMultiplier), 5)
-        
+        const windowMultiplier = this.getWindowMultiplier(window)
+        const estimatedPlays = Math.max(Math.round(rankingFactor * windowMultiplier * 0.1), 1)
+
         return {
           id: track.id,
           name: track.name,
@@ -328,7 +450,7 @@ class DataService {
           imageUrl: track.album.images?.[0]?.url
         }
       })
-      
+
       // 按播放次數排序
       return fallbackTracks.sort((a, b) => b.plays - a.plays)
     }
@@ -357,53 +479,98 @@ class DataService {
   private async getArtistsAnalysis(window: string): Promise<AnalyticsArtistData[]> {
     const timeRange = this.getSpotifyTimeRange(window)
     const windowMultiplier = this.getWindowMultiplier(window)
-    
+    const maxRecentTracks = this.getMaxRecentTracks(window)
+
     // 注意：Spotify API 限制每次最多只能獲取 50 位藝人
-    const [topArtists, recentTracks] = await Promise.all([
+    const [topArtists, recentTracksArray] = await Promise.all([
       spotifyWebAPI.getTopArtists(timeRange, 50),
-      spotifyWebAPI.getRecentlyPlayed(50).catch(() => ({ items: [] }))
+      spotifyWebAPI.getRecentlyPlayedMultiple(maxRecentTracks).catch(() => [])
     ])
+
+    // Filter recent tracks by time window for accurate counting
+    const windowMs = this.getWindowInMilliseconds(window)
+    const cutoffTime = Date.now() - windowMs
+    const filteredRecentTracks = recentTracksArray.filter(item => {
+      const playedAt = new Date(item.played_at).getTime()
+      return playedAt >= cutoffTime
+    })
     
-    // 統計藝術家實際播放次數和時長
+    // 統計時間窗口內的藝術家實際播放次數和時長
     const artistPlayCount = new Map<string, number>()
     const artistPlayTime = new Map<string, number>()
     
-    recentTracks.items.forEach(item => {
+    filteredRecentTracks.forEach(item => {
       item.track.artists.forEach(artist => {
         artistPlayCount.set(artist.id, (artistPlayCount.get(artist.id) || 0) + 1)
         artistPlayTime.set(artist.id, (artistPlayTime.get(artist.id) || 0) + item.track.duration_ms / 1000 / 60)
       })
     })
     
-    const artistsWithPlays = topArtists.items.map((artist, index) => {
-      const basePlayCount = artistPlayCount.get(artist.id) || 1
-      const basePlayTime = artistPlayTime.get(artist.id) || 3 // 預設3分鐘
-      const rankingBonus = Math.max(1, 50 - index)
+    // Build artists map with actual play data from filtered recent tracks
+    const artistsMap = new Map<string, AnalyticsArtistData>()
+    
+    // First, add artists from filtered recent tracks (within time window)
+    filteredRecentTracks.forEach(item => {
+      item.track.artists.forEach(artist => {
+        const existing = artistsMap.get(artist.id)
+        const playCount = artistPlayCount.get(artist.id) || 0
+        const playTime = artistPlayTime.get(artist.id) || 0
+        
+        if (!existing) {
+          // Find full artist data from topArtists if available
+          const fullArtist = topArtists.items.find(a => a.id === artist.id)
+          
+          artistsMap.set(artist.id, {
+            id: artist.id,
+            name: artist.name,
+            genres: fullArtist?.genres ? Array.isArray(fullArtist.genres) ? fullArtist.genres.slice(0, 3) : [] : [],
+            followers: fullArtist?.followers?.total || 0,
+            popularity: fullArtist?.popularity || 0,
+            plays: playCount,
+            minutes: Math.round(playTime),
+            imageUrl: fullArtist?.images?.[0]?.url
+          })
+        } else {
+          // Update play counts and time
+          existing.plays = Math.max(existing.plays, playCount)
+          existing.minutes = Math.max(existing.minutes, Math.round(playTime))
+        }
+      })
+    })
+    
+    // Then, add top artists that might not be in recent plays
+    topArtists.items.forEach((artist: SpotifyArtist, index: number) => {
+      const existing = artistsMap.get(artist.id)
       
-      // 根據時間窗口調整播放次數和時長
-      const adjustedPlays = Math.max(
-        Math.round((basePlayCount * windowMultiplier) / 10 + rankingBonus),
-        Math.round(basePlayCount * (windowMultiplier / 30))
-      )
-      
-      const adjustedMinutes = Math.round(
-        (basePlayTime * windowMultiplier) / 15 + (rankingBonus * 2)
-      )
-      
-      return {
-        id: artist.id,
-        name: artist.name,
-        genres: Array.isArray(artist.genres) ? artist.genres.slice(0, 3) : [],
-        followers: artist.followers?.total || 0,
-        popularity: artist.popularity,
-        plays: adjustedPlays,
-        minutes: adjustedMinutes,
-        imageUrl: artist.images?.[0]?.url
+      if (!existing) {
+        // Not in recent plays, estimate based on ranking
+        const rankingFactor = Math.max(1, 30 - index)
+        const estimatedPlays = Math.max(
+          Math.round(rankingFactor * windowMultiplier * 0.15),
+          1
+        )
+        
+        artistsMap.set(artist.id, {
+          id: artist.id,
+          name: artist.name,
+          genres: Array.isArray(artist.genres) ? artist.genres.slice(0, 3) : [],
+          followers: artist.followers?.total || 0,
+          popularity: artist.popularity,
+          plays: estimatedPlays,
+          minutes: Math.round(estimatedPlays * 3), // Estimate ~3 minutes per play
+          imageUrl: artist.images?.[0]?.url
+        })
+      } else {
+        // Already exists, update with full artist data
+        existing.genres = Array.isArray(artist.genres) ? artist.genres.slice(0, 3) : []
+        existing.followers = artist.followers?.total || 0
+        existing.popularity = artist.popularity
+        existing.imageUrl = artist.images?.[0]?.url || existing.imageUrl
       }
     })
     
-    // 按實際播放次數重新排序
-    const result = artistsWithPlays.sort((a, b) => b.plays - a.plays)
+    // Convert to array and sort by actual play count
+    const result = Array.from(artistsMap.values()).sort((a, b) => b.plays - a.plays)
     
     const totalPlays = result.reduce((sum, artist) => sum + artist.plays, 0)
     const totalMinutes = result.reduce((sum, artist) => sum + (artist.minutes || 0), 0)
@@ -440,40 +607,59 @@ class DataService {
       }))
   }
 
+  /**
+   * Maps application time windows to Spotify API time ranges
+   * According to Spotify API docs:
+   * - short_term: approximately last 4 weeks
+   * - medium_term: approximately last 6 months
+   * - long_term: calculated from several years of data and including all new data as it becomes available
+   */
   private getSpotifyTimeRange(window: string): SpotifyTimeRange {
     switch (window) {
       case '7d':
       case '30d':
-        return 'short_term' // ~4 weeks
+        return 'short_term' // ~4 weeks, best match for 7d and 30d
       case '90d':
       case '180d':
-        return 'medium_term' // ~6 months
+        return 'medium_term' // ~6 months, best match for 90d and 180d
       case '365d':
-        return 'long_term' // ~12 months
+        return 'long_term' // All-time data, best match for 365d
       default:
         return 'medium_term'
     }
   }
 
+  /**
+   * Calculates multiplier for estimating play counts based on time window
+   * These multipliers are conservative estimates used when actual play data is limited
+   * Note: Actual play counts from Recently Played API are always preferred over estimates
+   */
   private getWindowMultiplier(window: string): number {
     switch (window) {
-      case '7d': return 1.0
-      case '30d': return 4.3
-      case '90d': return 13.0
-      case '180d': return 26.0
-      case '365d': return 52.0
-      default: return 4.3
+      case '7d': return 1.0   // No scaling needed for recent data
+      case '30d': return 1.2  // Minimal scaling for 30 days
+      case '90d': return 1.8  // Conservative scaling for 90 days
+      case '180d': return 2.5 // Conservative scaling for 180 days
+      case '365d': return 3.5 // Conservative scaling for 365 days
+      default: return 1.2
     }
   }
 
-  private getRecentTracksLimit(window: string): number {
+  /**
+   * Determines how many recently played tracks to fetch based on time window
+   * Note: Spotify API limitations:
+   * - Recently Played API can only return up to ~50 tracks per request
+   * - Historical data beyond ~50 tracks may not be available
+   * - For longer time windows, we rely more on Top Tracks/Artists data
+   */
+  private getMaxRecentTracks(window: string): number {
     switch (window) {
-      case '7d': return 50
-      case '30d': return 50
-      case '90d': return 50
-      case '180d': return 50
-      case '365d': return 50
-      default: return 50
+      case '7d': return 50   // Recent data is most accurate for short windows
+      case '30d': return 100  // Try to get more for 30 days
+      case '90d': return 150  // Limited by API constraints
+      case '180d': return 200 // Limited by API constraints
+      case '365d': return 200 // Limited by API constraints
+      default: return 100
     }
   }
 
@@ -546,11 +732,13 @@ class DataService {
       const now = Date.now()
       const windowMs = this.getWindowInMilliseconds(window)
       const cutoffDate = now - windowMs
+      const maxRecentTracks = this.getMaxRecentTracks(window)
 
       console.log(`🕒 Time segment analysis for "${window}" window (${Math.round(windowMs / (24 * 60 * 60 * 1000))} days)`)
 
-      // 嘗試獲取更多最近播放記錄來覆蓋選擇的時間範圍
-      const recentTracks = await spotifyWebAPI.getRecentlyPlayed(50)
+      // 獲取更多最近播放記錄來覆蓋選擇的時間範圍
+      const recentTracksArray = await spotifyWebAPI.getRecentlyPlayedMultiple(maxRecentTracks)
+      const recentTracks = { items: recentTracksArray }
       
       const timeSegments = {
         morning: { label: '早上 (6:00-12:00)', tracks: [] as any[], artists: new Map() },
@@ -576,32 +764,36 @@ class DataService {
       // 為了更好的分析，嘗試結合 top tracks 來補充資料
       let enhancedTracks = [...filteredTracks]
       
+      // Track whether we're using simulated data
+      let hasSimulatedData = false
+
       // 如果資料不足，嘗試用 top tracks 來增強分析
       if (filteredTracks.length < 20) {
         try {
           const timeRange = this.getSpotifyTimeRange(window)
           const topTracks = await spotifyWebAPI.getTopTracks(timeRange, 30)
-          
+
           // 為 top tracks 生成模擬的播放時間分佈
           const simulatedTracks = topTracks.items.map((track, index) => {
             // 根據排名和熱度生成合理的播放時間分佈
             const hourDistribution = this.generateReasonableTimeDistribution(track.popularity, index)
             const randomHour = hourDistribution[Math.floor(Math.random() * hourDistribution.length)]
-            
+
             // 生成在時間範圍內的隨機時間戳
             const randomTime = cutoffDate + Math.random() * windowMs
             const playedAt = new Date(randomTime)
             playedAt.setHours(randomHour)
-            
+
             return {
               track,
               played_at: playedAt.toISOString(),
               context: null // 模擬資料不需要context
             } as SpotifyRecentlyPlayedTrack
           })
-          
+
           enhancedTracks = [...filteredTracks, ...simulatedTracks]
-          console.log(`📈 Enhanced analysis with ${simulatedTracks.length} simulated tracks based on top tracks`)
+          hasSimulatedData = true
+          console.log(`⚠️ Enhanced analysis with ${simulatedTracks.length} simulated tracks (insufficient actual data)`)
         } catch (error) {
           console.warn('Failed to enhance time segment analysis with top tracks:', error)
         }
@@ -632,7 +824,7 @@ class DataService {
           playedAt: item.played_at
         })
 
-        track.artists.forEach(artist => {
+        track.artists.forEach((artist: SpotifyArtist) => {
           const count = timeSegments[segment].artists.get(artist.name) || 0
           timeSegments[segment].artists.set(artist.name, count + 1)
         })
@@ -655,9 +847,18 @@ class DataService {
 
       const response = {
         data: segmentData,
-        sourceInfo: this.createSourceInfo('spotify')
+        sourceInfo: this.createSourceInfo('spotify', {
+          hasSimulatedData,
+          actualDataPoints: filteredTracks.length,
+          apiLimitations: hasSimulatedData ? [
+            '實際數據不足，部分時間分佈為基於熱門歌曲的模擬數據',
+            `僅 ${filteredTracks.length} 條實際播放記錄可用於分析`
+          ] : [
+            `基於 ${filteredTracks.length} 條實際播放記錄`
+          ]
+        })
       }
-      
+
       cacheManager.cacheTimeSegments(response, 5 * 60 * 1000)
       return response
 

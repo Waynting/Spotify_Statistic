@@ -59,7 +59,7 @@ export default function Shelf() {
       {error && (
         <div className="text-center py-12">
           <div className="bg-gray-900 rounded-lg p-6 inline-block">
-            <p className="text-yellow-400 font-medium mb-2">無法載入音樂資料</p>
+            <p className="text-gray-400 font-medium mb-2">無法載入音樂資料</p>
             <p className="text-gray-400 text-sm mb-4">請確認已連接 Spotify</p>
             <button
               onClick={() => (window as any).location.reload()}
@@ -114,7 +114,7 @@ export default function Shelf() {
       
       {!isAuthenticated && (
         <div className="mt-8 bg-gray-900 rounded-lg p-4 flex items-start gap-3">
-          <Info className="text-blue-400 mt-1" size={20} />
+          <Info className="text-gray-400 mt-1" size={20} />
           <div className="text-sm">
             <p className="text-gray-300 font-medium">需要 Spotify 連接</p>
             <p className="text-gray-400 mt-1">

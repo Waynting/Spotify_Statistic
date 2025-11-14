@@ -3,6 +3,7 @@ import {
   SpotifyTokenResponse,
   SpotifyTopTracksResponse,
   SpotifyRecentlyPlayedResponse,
+  SpotifyRecentlyPlayedTrack,
   SpotifyUser,
   SpotifyTopArtistsResponse,
   SpotifyTimeRange
@@ -45,31 +46,74 @@ class SpotifyWebAPI {
 
   constructor() {
     // Try to load tokens from localStorage
+    // If tokens are invalid or expired, they will be cleared
     this.loadTokensFromStorage()
   }
 
+  /**
+   * Save tokens to localStorage
+   * Security Note: Tokens are stored in localStorage which is accessible to JavaScript
+   * This is acceptable for web apps as:
+   * - Access tokens are short-lived (1 hour)
+   * - Refresh tokens are scoped and can be revoked
+   * - localStorage is protected by same-origin policy
+   * - XSS protection should be implemented at application level
+   */
   private saveTokensToStorage() {
     if (this.accessToken && this.refreshToken && this.tokenExpiry) {
-      localStorage.setItem('spotify_access_token', this.accessToken)
-      localStorage.setItem('spotify_refresh_token', this.refreshToken)
-      localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString())
+      try {
+        localStorage.setItem('spotify_access_token', this.accessToken)
+        localStorage.setItem('spotify_refresh_token', this.refreshToken)
+        localStorage.setItem('spotify_token_expiry', this.tokenExpiry.toString())
+      } catch (error) {
+        console.error('Failed to save tokens to localStorage:', error)
+        // Clear tokens if storage fails
+        this.clearTokens()
+      }
     }
   }
 
-  private loadTokensFromStorage() {
-    this.accessToken = localStorage.getItem('spotify_access_token')
-    this.refreshToken = localStorage.getItem('spotify_refresh_token')
-    const expiry = localStorage.getItem('spotify_token_expiry')
-    this.tokenExpiry = expiry ? parseInt(expiry) : null
+  /**
+   * Load tokens from localStorage
+   * Returns false if tokens are invalid or expired
+   */
+  private loadTokensFromStorage(): boolean {
+    try {
+      this.accessToken = localStorage.getItem('spotify_access_token')
+      this.refreshToken = localStorage.getItem('spotify_refresh_token')
+      const expiry = localStorage.getItem('spotify_token_expiry')
+      this.tokenExpiry = expiry ? parseInt(expiry, 10) : null
+      
+      // Validate token expiry
+      if (this.tokenExpiry && Date.now() >= this.tokenExpiry) {
+        // Token expired, clear it
+        this.clearTokens()
+        return false
+      }
+      
+      return !!(this.accessToken && this.refreshToken && this.tokenExpiry)
+    } catch (error) {
+      console.error('Failed to load tokens from localStorage:', error)
+      this.clearTokens()
+      return false
+    }
   }
 
+  /**
+   * Clear all tokens from memory and storage
+   * Security: Ensures tokens are completely removed
+   */
   private clearTokens() {
     this.accessToken = null
     this.refreshToken = null
     this.tokenExpiry = null
-    localStorage.removeItem('spotify_access_token')
-    localStorage.removeItem('spotify_refresh_token')
-    localStorage.removeItem('spotify_token_expiry')
+    try {
+      localStorage.removeItem('spotify_access_token')
+      localStorage.removeItem('spotify_refresh_token')
+      localStorage.removeItem('spotify_token_expiry')
+    } catch (error) {
+      console.error('Failed to clear tokens from localStorage:', error)
+    }
   }
 
   public isAuthenticated(): boolean {
@@ -83,18 +127,28 @@ class SpotifyWebAPI {
       throw new Error('需要設置 SPOTIFY_CLIENT_ID 才能使用認證功能')
     }
 
-    // 清除任何舊的 PKCE 參數
-    sessionStorage.removeItem('spotify_code_verifier')
-    sessionStorage.removeItem('spotify_state')
+    // Security: Clear any old PKCE parameters to prevent reuse attacks
+    try {
+      sessionStorage.removeItem('spotify_code_verifier')
+      sessionStorage.removeItem('spotify_state')
+    } catch (error) {
+      console.warn('Failed to clear old PKCE parameters:', error)
+    }
 
-    // 生成新的 PKCE 參數
-    const codeVerifier = generateCodeVerifier()
-    const codeChallenge = await generateCodeChallenge(codeVerifier)
-    const state = generateRandomString(16) // 16 bytes = 128 bits
+    // Generate new PKCE parameters
+    // Security: PKCE (Proof Key for Code Exchange) prevents authorization code interception
+    const codeVerifier = generateCodeVerifier() // Random 32-byte string
+    const codeChallenge = await generateCodeChallenge(codeVerifier) // SHA256 hash
+    const state = generateRandomString(16) // 16 bytes = 128 bits for CSRF protection
 
-    // Store PKCE parameters
-    sessionStorage.setItem('spotify_code_verifier', codeVerifier)
-    sessionStorage.setItem('spotify_state', state)
+    // Store PKCE parameters in sessionStorage (cleared when tab closes)
+    // Security: sessionStorage is more secure than localStorage for temporary auth data
+    try {
+      sessionStorage.setItem('spotify_code_verifier', codeVerifier)
+      sessionStorage.setItem('spotify_state', state)
+    } catch (error) {
+      throw new Error('無法儲存認證參數，請檢查瀏覽器設定')
+    }
 
     const authUrl = new URL('https://accounts.spotify.com/authorize')
     authUrl.searchParams.append('client_id', config.spotify.clientId)
@@ -109,15 +163,22 @@ class SpotifyWebAPI {
   }
 
   public async handleAuthCallback(code: string, state: string): Promise<void> {
+    // Security: Validate state parameter to prevent CSRF attacks
     const storedState = sessionStorage.getItem('spotify_state')
     const codeVerifier = sessionStorage.getItem('spotify_code_verifier')
 
-    if (state !== storedState) {
-      throw new Error('State mismatch')
+    if (!storedState || state !== storedState) {
+      // Clear tokens and PKCE params on security failure
+      this.clearTokens()
+      try {
+        sessionStorage.removeItem('spotify_code_verifier')
+        sessionStorage.removeItem('spotify_state')
+      } catch {}
+      throw new Error('State mismatch - 可能存在安全風險，請重新認證')
     }
 
     if (!codeVerifier) {
-      throw new Error('Code verifier not found')
+      throw new Error('Code verifier not found - 認證流程異常，請重新開始')
     }
 
     const tokenData = {
@@ -149,9 +210,14 @@ class SpotifyWebAPI {
       
       this.saveTokensToStorage()
       
-      // Clear session storage
-      sessionStorage.removeItem('spotify_code_verifier')
-      sessionStorage.removeItem('spotify_state')
+      // Security: Clear PKCE parameters from sessionStorage after successful token exchange
+      // This prevents reuse of authorization codes
+      try {
+        sessionStorage.removeItem('spotify_code_verifier')
+        sessionStorage.removeItem('spotify_state')
+      } catch (error) {
+        console.warn('Failed to clear PKCE parameters:', error)
+      }
       
     } catch (error) {
       this.clearTokens()
@@ -200,7 +266,9 @@ class SpotifyWebAPI {
     }
   }
 
-  private async makeAuthenticatedRequest<T>(endpoint: string): Promise<T> {
+  private async makeAuthenticatedRequest<T>(endpoint: string, retryCount: number = 0): Promise<T> {
+    const maxRetries = 3
+
     if (!this.isAuthenticated()) {
       if (this.refreshToken) {
         await this.refreshAccessToken()
@@ -215,39 +283,141 @@ class SpotifyWebAPI {
       },
     })
 
+    // Handle 401 Unauthorized - token expired
     if (response.status === 401) {
-      // Token expired, try to refresh
       if (this.refreshToken) {
         await this.refreshAccessToken()
-        // Retry the request
-        return this.makeAuthenticatedRequest<T>(endpoint)
+        // Retry the request once after refresh
+        return this.makeAuthenticatedRequest<T>(endpoint, retryCount)
       } else {
         this.clearTokens()
-        throw new Error('Authentication failed')
+        throw new Error('Authentication failed: No refresh token available')
       }
     }
 
+    // Handle 429 Too Many Requests - rate limiting
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After')
+      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, retryCount) * 1000
+      
+      if (retryCount < maxRetries) {
+        console.warn(`Rate limited. Retrying after ${waitTime}ms (attempt ${retryCount + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        return this.makeAuthenticatedRequest<T>(endpoint, retryCount + 1)
+      } else {
+        throw new Error('Rate limit exceeded. Please try again later.')
+      }
+    }
+
+    // Handle 503 Service Unavailable
+    if (response.status === 503) {
+      if (retryCount < maxRetries) {
+        const waitTime = Math.pow(2, retryCount) * 1000
+        console.warn(`Service unavailable. Retrying after ${waitTime}ms (attempt ${retryCount + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        return this.makeAuthenticatedRequest<T>(endpoint, retryCount + 1)
+      } else {
+        throw new Error('Spotify API is temporarily unavailable. Please try again later.')
+      }
+    }
+
+    // Handle other errors
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`)
+      let errorMessage = `API request failed: ${response.status}`
+      try {
+        const errorData = await response.json()
+        if (errorData.error?.message) {
+          errorMessage = `Spotify API error: ${errorData.error.message}`
+        }
+      } catch {
+        // If response is not JSON, use default error message
+      }
+      throw new Error(errorMessage)
     }
 
     return response.json()
   }
 
-  public async getTopTracks(timeRange: SpotifyTimeRange = 'medium_term', limit: number = 50): Promise<SpotifyTopTracksResponse> {
-    return this.makeAuthenticatedRequest<SpotifyTopTracksResponse>(`/me/top/tracks?time_range=${timeRange}&limit=${limit}`)
+  public async getTopTracks(timeRange: SpotifyTimeRange = 'medium_term', limit: number = 50, offset: number = 0): Promise<SpotifyTopTracksResponse> {
+    const params = new URLSearchParams({
+      time_range: timeRange,
+      limit: limit.toString(),
+      offset: offset.toString()
+    })
+    return this.makeAuthenticatedRequest<SpotifyTopTracksResponse>(`/me/top/tracks?${params}`)
   }
 
-  public async getRecentlyPlayed(limit: number = 50): Promise<SpotifyRecentlyPlayedResponse> {
-    return this.makeAuthenticatedRequest<SpotifyRecentlyPlayedResponse>(`/me/player/recently-played?limit=${limit}`)
+  public async getRecentlyPlayed(limit: number = 50, before?: number, after?: number): Promise<SpotifyRecentlyPlayedResponse> {
+    const params = new URLSearchParams({ limit: limit.toString() })
+    // Note: before and after cannot be used together per Spotify API docs
+    if (before) {
+      params.append('before', before.toString())
+    } else if (after) {
+      params.append('after', after.toString())
+    }
+    return this.makeAuthenticatedRequest<SpotifyRecentlyPlayedResponse>(`/me/player/recently-played?${params}`)
+  }
+
+  // Fetch multiple pages of recently played tracks
+  // Note: Spotify API can only return up to ~50 recently played tracks per request
+  // This method attempts to fetch multiple pages, but may be limited by API constraints
+  public async getRecentlyPlayedMultiple(maxTracks: number = 200): Promise<SpotifyRecentlyPlayedTrack[]> {
+    const allTracks: SpotifyRecentlyPlayedTrack[] = []
+    let before: number | undefined = undefined
+    const batchSize = 50 // Spotify API max limit per request
+    let requestCount = 0
+    const maxRequests = Math.ceil(maxTracks / batchSize) // Limit requests to avoid rate limits
+
+    try {
+      while (allTracks.length < maxTracks && requestCount < maxRequests) {
+        const response = await this.getRecentlyPlayed(batchSize, before)
+
+        if (!response.items || response.items.length === 0) {
+          break // No more data available
+        }
+
+        allTracks.push(...response.items)
+        requestCount++
+
+        // Use the cursor to get the next page (older tracks)
+        // Note: Spotify API may not always provide cursors.before for historical data
+        if (response.cursors?.before) {
+          const nextBefore = parseInt(response.cursors.before)
+          // Avoid infinite loops: check if we're getting the same cursor
+          if (before === nextBefore || allTracks.length >= maxTracks) {
+            break
+          }
+          before = nextBefore
+        } else {
+          // No cursor means no more pages available
+          break
+        }
+
+        // Rate limiting: wait between requests to avoid hitting API limits
+        // Spotify allows 300 requests per 30 seconds for authenticated users
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      console.log(`✅ Fetched ${allTracks.length} recently played tracks across ${requestCount} requests`)
+      return allTracks.slice(0, maxTracks)
+    } catch (error) {
+      console.error('Error fetching multiple recently played:', error)
+      // Return what we have so far instead of failing completely
+      return allTracks
+    }
   }
 
   public async getCurrentUser(): Promise<SpotifyUser> {
     return this.makeAuthenticatedRequest('/me')
   }
 
-  public async getTopArtists(timeRange: SpotifyTimeRange = 'medium_term', limit = 20): Promise<SpotifyTopArtistsResponse> {
-    return this.makeAuthenticatedRequest(`/me/top/artists?time_range=${timeRange}&limit=${limit}`)
+  public async getTopArtists(timeRange: SpotifyTimeRange = 'medium_term', limit: number = 20, offset: number = 0): Promise<SpotifyTopArtistsResponse> {
+    const params = new URLSearchParams({
+      time_range: timeRange,
+      limit: limit.toString(),
+      offset: offset.toString()
+    })
+    return this.makeAuthenticatedRequest<SpotifyTopArtistsResponse>(`/me/top/artists?${params}`)
   }
 
   public logout(): void {

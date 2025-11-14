@@ -49,8 +49,7 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# Tauri specific - ignore entire Tauri directory for now (focus on web version first)
-/src-tauri/
+# Tauri removed - web-only application
 
 # SQLite databases (optional - comment out if you want to include demo data)
 *.db
@@ -67,6 +66,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+/Agent_use
 
 # Spotify credentials (keep these secret!)
 # Already covered by .env* pattern above

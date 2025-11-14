@@ -147,7 +147,7 @@ export default function DataSnapshot() {
                       className={`
                         p-3 rounded-lg border cursor-pointer transition-all duration-200
                         ${isSelected 
-                          ? 'bg-blue-600/20 border-blue-500/40 text-white' 
+                          ? 'bg-white/10 border-white/40 text-white' 
                           : 'bg-gray-800/50 border-gray-700 text-gray-400 hover:bg-gray-800'
                         }
                       `}
@@ -155,7 +155,7 @@ export default function DataSnapshot() {
                       <div className="flex items-start gap-3">
                         <div className="mt-1">
                           {isSelected ? (
-                            <CheckCircle size={16} className="text-blue-400" />
+                            <CheckCircle size={16} className="text-white" />
                           ) : (
                             <Circle size={16} />
                           )}
@@ -189,7 +189,7 @@ export default function DataSnapshot() {
                       className={`
                         p-2 rounded-lg text-xs font-medium transition-all duration-200
                         ${selectedWindow === window.value
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-white text-black'
                           : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                         }
                       `}
@@ -208,7 +208,7 @@ export default function DataSnapshot() {
                   w-full mt-6 p-3 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2
                   ${!selectedSection || isGenerating
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
+                    : 'bg-white hover:bg-gray-200 text-black shadow-lg hover:shadow-xl'
                   }
                 `}
               >
@@ -263,7 +263,7 @@ export default function DataSnapshot() {
                     <p className="text-gray-400 mb-1">
                       {ANALYTICS_TIME_WINDOWS.find(w => w.value === selectedWindow)?.description}
                     </p>
-                    <p className="text-blue-400 text-sm">
+                    <p className="text-gray-400 text-sm">
                       {DATA_SECTIONS.find(s => s.id === selectedSection)?.label}
                     </p>
                   </div>

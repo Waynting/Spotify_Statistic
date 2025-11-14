@@ -4,12 +4,12 @@ import { Clock, Play, Volume2, Star, Sun, Sunset, Moon, Sunrise } from 'lucide-r
 import { TimeSegmentData } from '../../types/spotify'
 import StatsCard from './StatsCard'
 
-// 陽光主題配色：從清晨到夜晚的太陽光譜
+// 黑白色主題配色
 const COLORS = {
-  morning: '#FFB74D',    // 清晨陽光 - 溫暖金色
-  afternoon: '#FDD835',  // 正午陽光 - 明亮黃色
-  evening: '#FF7043',    // 夕陽西下 - 橙紅色
-  night: '#7986CB'       // 星月夜空 - 柔和紫藍
+  morning: '#FFFFFF',    // 白色
+  afternoon: '#E5E5E5',  // 淺灰
+  evening: '#B3B3B3',    // 中灰
+  night: '#808080'       // 深灰
 }
 
 // 根據時間段順序的顏色陣列
@@ -19,13 +19,13 @@ const COLOR_ARRAY = [COLORS.morning, COLORS.afternoon, COLORS.evening, COLORS.ni
 const getTimeSegmentTheme = (segment: string) => {
   switch (segment) {
     case 'morning':
-      return { icon: Sunrise, color: COLORS.morning, name: '清晨陽光' }
+      return { icon: Sunrise, color: COLORS.morning, name: '早上' }
     case 'afternoon': 
-      return { icon: Sun, color: COLORS.afternoon, name: '正午陽光' }
+      return { icon: Sun, color: COLORS.afternoon, name: '下午' }
     case 'evening':
-      return { icon: Sunset, color: COLORS.evening, name: '夕陽西下' }
+      return { icon: Sunset, color: COLORS.evening, name: '晚上' }
     case 'night':
-      return { icon: Moon, color: COLORS.night, name: '星月夜空' }
+      return { icon: Moon, color: COLORS.night, name: '半夜' }
     default:
       return { icon: Clock, color: COLORS.morning, name: '時間段' }
   }
@@ -68,27 +68,27 @@ export default function TimeSegmentAnalysis({ data, selectedWindow }: TimeSegmen
           title="時間段"
           value="4個"
           subtitle="分析區間"
-          color="text-yellow-400"
+          color="text-white"
         />
         <StatsCard
           icon={Play}
           title="總播放次數"
           value={totalTracks.toString()}
-          color="text-orange-400"
+          color="text-gray-300"
         />
         <StatsCard
           icon={Sunset}
           title="活躍時段"
           value={peakSegment.label.split(' ')[0]}
           subtitle={`${peakSegment.percentage}%`}
-          color="text-red-400"
+          color="text-gray-400"
         />
         <StatsCard
           icon={Star}
           title="平均分佈"
           value={Math.round(totalTracks / 4).toString()}
           subtitle="每時段"
-          color="text-purple-400"
+          color="text-gray-500"
         />
       </div>
 

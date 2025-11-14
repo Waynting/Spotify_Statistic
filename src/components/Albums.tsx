@@ -231,8 +231,8 @@ export default function Albums() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" role="region" aria-label="統計概覽">
           <div className="bg-gray-900 rounded-lg p-4 hover:bg-gray-800 transition-colors duration-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/20 rounded-lg" aria-hidden="true">
-                <Play className="text-blue-400" size={20} />
+              <div className="p-2 bg-gray-800 rounded-lg" aria-hidden="true">
+                <Play className="text-white" size={20} />
               </div>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white" aria-label={`專輯總數 ${stats.totalAlbums}`}>
@@ -245,8 +245,8 @@ export default function Albums() {
           
           <div className="bg-gray-900 rounded-lg p-4 hover:bg-gray-800 transition-colors duration-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/20 rounded-lg" aria-hidden="true">
-                <Headphones className="text-green-400" size={20} />
+              <div className="p-2 bg-gray-800 rounded-lg" aria-hidden="true">
+                <Headphones className="text-white" size={20} />
               </div>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white" aria-label={`總播放次數 ${stats.totalPlays.toLocaleString()}`}>
@@ -259,8 +259,8 @@ export default function Albums() {
           
           <div className="bg-gray-900 rounded-lg p-4 hover:bg-gray-800 transition-colors duration-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/20 rounded-lg" aria-hidden="true">
-                <Clock className="text-purple-400" size={20} />
+              <div className="p-2 bg-gray-800 rounded-lg" aria-hidden="true">
+                <Clock className="text-white" size={20} />
               </div>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white" aria-label={`總聆聽時長 ${formatDuration(stats.totalMinutes)}`}>
@@ -273,8 +273,8 @@ export default function Albums() {
           
           <div className="bg-gray-900 rounded-lg p-4 hover:bg-gray-800 transition-colors duration-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-500/20 rounded-lg" aria-hidden="true">
-                <TrendingUp className="text-orange-400" size={20} />
+              <div className="p-2 bg-gray-800 rounded-lg" aria-hidden="true">
+                <TrendingUp className="text-white" size={20} />
               </div>
               <div>
                 <p className="text-xl md:text-2xl font-bold text-white" aria-label={`平均播放次數 ${stats.avgPlaysPerAlbum}`}>
@@ -306,8 +306,8 @@ export default function Albums() {
 
       {/* 錯誤狀態 */}
       {error && (
-        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 text-center" role="alert">
-          <p className="text-red-400 mb-4">載入數據時發生錯誤</p>
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center" role="alert">
+          <p className="text-gray-400 mb-4">載入數據時發生錯誤</p>
           <p className="text-sm text-gray-400 mb-4">{error instanceof Error ? error.message : '未知錯誤'}</p>
           <button
             onClick={handleRefresh}

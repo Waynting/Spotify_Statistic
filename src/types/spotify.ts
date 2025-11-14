@@ -358,6 +358,10 @@ export interface DataSourceInfo {
   timestamp: number
   isOnline: boolean
   hasValidToken: boolean
+  isEstimated?: boolean // Indicates if play counts are estimated
+  actualDataPoints?: number // Number of actual data points used
+  hasSimulatedData?: boolean // Indicates if time data is simulated
+  apiLimitations?: string[] // List of API limitations affecting this data
 }
 
 export interface AnalyticsResponse<T> {

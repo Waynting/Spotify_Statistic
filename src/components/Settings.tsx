@@ -126,11 +126,11 @@ export default function Settings() {
                   </ul>
                 </div>
                 
-                <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
-                  <p className="text-sm text-blue-200 mb-2">
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <p className="text-sm text-white mb-2">
                     <strong>資料安全承諾</strong>
                   </p>
-                  <p className="text-sm text-blue-300/80">
+                  <p className="text-sm text-gray-400">
                     我們僅存取您授權的 Spotify 資料，所有資料處理都在本地進行，不會上傳到我們的伺服器。您可以隨時撤銷授權。
                   </p>
                 </div>
@@ -147,14 +147,14 @@ export default function Settings() {
             <div className="flex flex-wrap gap-4">
               <a
                 href="/privacy"
-                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
+                className="text-white hover:text-gray-300 flex items-center gap-1 transition-colors text-sm"
               >
                 <ExternalLink size={14} />
                 隱私政策
               </a>
               <a
                 href="/terms"
-                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
+                className="text-white hover:text-gray-300 flex items-center gap-1 transition-colors text-sm"
               >
                 <ExternalLink size={14} />
                 使用條款
@@ -163,7 +163,7 @@ export default function Settings() {
                 href="https://www.spotify.com/account/apps/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 flex items-center gap-1 transition-colors text-sm"
+                className="text-white hover:text-gray-300 flex items-center gap-1 transition-colors text-sm"
               >
                 <ExternalLink size={14} />
                 管理 Spotify 應用程式授權

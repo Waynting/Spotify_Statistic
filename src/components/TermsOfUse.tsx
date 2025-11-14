@@ -19,7 +19,7 @@ export default function TermsOfUse() {
           </button>
           
           <div className="flex items-center gap-3 mb-4">
-            <FileText className="w-8 h-8 text-green-400" />
+            <FileText className="w-8 h-8 text-white" />
             <h1 className="text-3xl font-bold">Terms of Use</h1>
           </div>
           
@@ -60,7 +60,7 @@ export default function TermsOfUse() {
           {/* User Responsibilities */}
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="w-6 h-6 text-yellow-400" />
+              <AlertTriangle className="w-6 h-6 text-gray-400" />
               <h2 className="text-xl font-semibold">3. 使用者責任</h2>
             </div>
             <div className="space-y-3 text-gray-300">
@@ -96,7 +96,7 @@ export default function TermsOfUse() {
               <p>我們僅使用您的 Spotify 資料來提供服務功能。詳細的資料處理方式請參考我們的 
                 <button
                   onClick={() => navigate('/privacy')}
-                  className="text-blue-400 hover:underline mx-1"
+                  className="text-white hover:text-gray-300 hover:underline mx-1"
                 >
                   隱私政策
                 </button>
@@ -121,7 +121,7 @@ export default function TermsOfUse() {
           {/* Liability */}
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <div className="flex items-center gap-3 mb-4">
-              <Scale className="w-6 h-6 text-blue-400" />
+              <Scale className="w-6 h-6 text-white" />
               <h2 className="text-xl font-semibold">7. 責任限制</h2>
             </div>
             <div className="space-y-3 text-gray-300">
@@ -161,7 +161,7 @@ export default function TermsOfUse() {
             <div className="text-gray-300">
               <p>如對這些條款有疑問，請聯繫：</p>
               <p className="mt-2">
-                <a href="mailto:support@spotify-crate.com" className="text-blue-400 hover:underline">
+                <a href="mailto:support@spotify-crate.com" className="text-white hover:text-gray-300 hover:underline">
                   support@spotify-crate.com
                 </a>
               </p>

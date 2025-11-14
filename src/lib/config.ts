@@ -1,30 +1,34 @@
-// Check if running in Tauri desktop app
-const isTauri = typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__ !== undefined
-
 // Get the appropriate redirect URI based on environment
+// Security: Redirect URI must match exactly what's configured in Spotify Dashboard
 const getRedirectUri = () => {
-  if (isTauri) {
-    // Desktop app - use desktop redirect URI
-    return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_DESKTOP || 'http://127.0.0.1:8001/callback'
+  if (import.meta.env.PROD) {
+    // Production - use the actual deployed URL
+    return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_PROD || 'https://spotify-statistic-ntu.vercel.app/callback'
   } else {
-    // Web app - use web redirect URI based on environment
-    if (import.meta.env.PROD) {
-      // Production - use the actual deployed URL
-      return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_PROD || 'https://spotify-statistic-ntu.vercel.app/callback'
-    } else {
-      // Development - use local URL
-      return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_WEB || 'http://127.0.0.1:8000/callback'
-    }
+    // Development - use local URL
+    return import.meta.env.VITE_SPOTIFY_REDIRECT_URI_WEB || 'http://127.0.0.1:8000/callback'
   }
 }
 
 // Environment configuration
-// One-click authentication using pre-configured client ID
+// Security: Client ID is public and safe to expose in frontend
+// It's used for OAuth PKCE flow which doesn't require client secret
 const getClientId = () => {
   // Priority: environment variable > localStorage (for fallback)
-  return import.meta.env.VITE_SPOTIFY_CLIENT_ID || 
-         localStorage.getItem('spotify_client_id') || 
-         ''
+  // Note: Client ID stored in localStorage is for user convenience only
+  // It's not a security risk as Client ID is meant to be public
+  const envClientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID
+  if (envClientId) {
+    return envClientId
+  }
+  
+  // Fallback to localStorage (user may have configured it manually)
+  const storedClientId = localStorage.getItem('spotify_client_id')
+  if (storedClientId) {
+    return storedClientId
+  }
+  
+  return ''
 }
 
 const getDynamicScopes = () => {

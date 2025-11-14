@@ -125,7 +125,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
       {/* 聆聽成就 */}
       <section className="bg-gray-900 rounded-lg p-4 md:p-6">
         <h3 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <Award className="text-yellow-400" size={24} />
+          <Award className="text-white" size={24} />
           聆聽成就
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -158,7 +158,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
       {/* 每日聆聽模式 */}
       <section className="bg-gray-900 rounded-lg p-4 md:p-6">
         <h3 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <Clock className="text-blue-400" size={24} />
+          <Clock className="text-gray-400" size={24} />
           每日聆聽模式
         </h3>
         <div className="h-64">
@@ -215,7 +215,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
             播放次數
           </span>
           <span className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-orange-500 rounded" />
+            <div className="w-3 h-3 bg-white rounded" />
             能量指數
           </span>
         </div>
@@ -224,7 +224,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
       {/* 音樂品味雷達圖 */}
       <section className="bg-gray-900 rounded-lg p-4 md:p-6">
         <h3 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <Target className="text-purple-400" size={24} />
+          <Target className="text-gray-400" size={24} />
           音樂品味分析
         </h3>
         <div className="h-80">
@@ -269,7 +269,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
       {/* 每週聆聽趨勢 */}
       <section className="bg-gray-900 rounded-lg p-4 md:p-6">
         <h3 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-          <Calendar className="text-green-400" size={24} />
+          <Calendar className="text-gray-400" size={24} />
           每週聆聽趨勢
         </h3>
         <div className="h-64">
@@ -311,7 +311,7 @@ export default function MusicInsights({ timeWindow }: { timeWindow: string }) {
       {topArtists && topArtists.items.length > 0 && (
         <section className="bg-gray-900 rounded-lg p-4 md:p-6">
           <h3 className="text-lg md:text-xl font-semibold text-white mb-4 flex items-center gap-2">
-            <Mic2 className="text-red-400" size={24} />
+            <Mic2 className="text-gray-400" size={24} />
             你的熱門藝人
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

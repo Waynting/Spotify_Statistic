@@ -1,50 +1,93 @@
 /**
- * React hook for unified authentication
+ * React hook for Spotify authentication
+ * Uses spotifyWebAPI for OAuth PKCE flow
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { authManager, AuthState, AuthEvent } from '../lib/auth-manager'
+import { spotifyWebAPI } from '../lib/spotify-web-api'
+import { useAuthStore } from '../store/useAuthStore'
 
 export function useAuth() {
-  const [state, setState] = useState<AuthState>(authManager.getState())
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
 
+  // Check authentication status on mount
   useEffect(() => {
-    const unsubscribe = authManager.subscribe((event: AuthEvent) => {
-      setState(authManager.getState())
-    })
-
-    return unsubscribe
+    const checkAuth = () => {
+      const authenticated = spotifyWebAPI.isAuthenticated()
+      useAuthStore.getState().setAuthenticated(authenticated)
+    }
+    
+    checkAuth()
+    // Check periodically (every 5 minutes) to catch token expiry
+    const interval = setInterval(checkAuth, 5 * 60 * 1000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const login = useCallback(async () => {
     try {
-      await authManager.login()
+      setIsLoading(true)
+      setError(null)
+      
+      // Start OAuth flow - redirects to Spotify
+      const authUrl = await spotifyWebAPI.startAuthFlow()
+      window.location.href = authUrl
+      
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed'
+      setError(errorMessage)
       console.error('Login failed:', error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
   const logout = useCallback(() => {
-    authManager.logout()
+    try {
+      spotifyWebAPI.logout()
+      useAuthStore.getState().logout()
+      setError(null)
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Force logout anyway
+      useAuthStore.getState().logout()
+    }
   }, [])
 
   const handleCallback = useCallback(async (code: string, state: string) => {
     try {
-      await authManager.handleCallback(code, state)
+      setIsLoading(true)
+      setError(null)
+      
+      await spotifyWebAPI.handleAuthCallback(code, state)
+      useAuthStore.getState().setAuthenticated(true)
+      
+      // Try to get user profile
+      try {
+        const user = await spotifyWebAPI.getCurrentUser()
+        useAuthStore.getState().setUser(user)
+      } catch (error) {
+        console.warn('Failed to load user profile:', error)
+      }
+      
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Callback handling failed'
+      setError(errorMessage)
       console.error('Callback handling failed:', error)
       throw error
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
   return {
     // State
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    error: state.error,
-    platform: state.platform,
-    method: state.method,
+    isAuthenticated,
+    isLoading,
+    error,
     
     // Actions
     login,
@@ -52,6 +95,6 @@ export function useAuth() {
     handleCallback,
     
     // Utilities
-    isAuthenticatedCheck: authManager.isAuthenticated.bind(authManager)
+    isAuthenticatedCheck: () => spotifyWebAPI.isAuthenticated()
   }
 }
