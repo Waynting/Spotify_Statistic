@@ -636,18 +636,6 @@ class DataService {
     }
   }
 
-  private getWindowInMilliseconds(window: string): number {
-    switch (window) {
-      case '7d': return 7 * 24 * 60 * 60 * 1000
-      case '30d': return 30 * 24 * 60 * 60 * 1000
-      case '90d': return 90 * 24 * 60 * 60 * 1000
-      case '180d': return 180 * 24 * 60 * 60 * 1000
-      case '365d': return 365 * 24 * 60 * 60 * 1000
-      default: return 30 * 24 * 60 * 60 * 1000
-    }
-  }
-
-
   public async getTimeSegmentAnalysis(window: string = '30d'): Promise<AnalyticsResponse<TimeSegmentData>> {
     const cached = cacheManager.getCachedTimeSegments<TimeSegmentData>(window)
     if (cached) {
