@@ -65,8 +65,11 @@ Spotify Crate 需要以下 API 權限：
    - ✅ `user-read-playback-state` - 讀取播放狀態
    - ✅ `user-modify-playback-state` - 控制播放
    - ✅ `user-read-currently-playing` - 讀取當前播放
+   - ✅ `user-read-email` - 讀取用戶 email（用於資料庫儲存）
 
 3. 點擊「Save」
+
+**注意**：`user-read-email` 權限用於獲取用戶的 Spotify 帳號 email，並自動儲存到資料庫中，方便用戶管理和識別。
 
 ### 5. 設定環境變數
 
@@ -148,6 +151,11 @@ NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=https://your-domain.com/callback
 - **用途**：讀取當前播放的歌曲資訊
 - **必需**：是
 - **理由**：顯示當前播放詳情
+
+### user-read-email
+- **用途**：讀取用戶的 Spotify 帳號 email
+- **必需**：是
+- **理由**：自動將用戶 email 儲存到資料庫，方便用戶識別和管理
 
 ## ⚠️ 重要限制：用戶白名單
 

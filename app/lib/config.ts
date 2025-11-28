@@ -44,7 +44,8 @@ const getDynamicScopes = () => {
     'user-read-recently-played', 
     'user-read-playback-state',
     'user-modify-playback-state',
-    'user-read-currently-playing'
+    'user-read-currently-playing',
+    'user-read-email' // Required to get user email
   ]
   
   const storedScopes = localStorage.getItem('spotify_scopes')
