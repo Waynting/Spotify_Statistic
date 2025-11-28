@@ -47,8 +47,31 @@ export class PlayHistoryModel {
       record.popularity || null
     ])
 
-    const result = await pool.query(query, values)
-    return result.rowCount || 0
+    try {
+      const result = await pool.query(query, values)
+      // With ON CONFLICT DO NOTHING, rowCount shows actual inserted rows
+      const insertedCount = result.rowCount || 0
+      console.log(`📊 Inserted ${insertedCount} out of ${records.length} play history records`)
+      
+      if (insertedCount === 0 && records.length > 0) {
+        console.warn(`⚠️  No records inserted! Possible reasons:`)
+        console.warn(`   - All records already exist (duplicates)`)
+        console.warn(`   - Database constraint violation`)
+        console.warn(`   - Sample record:`, JSON.stringify(records[0], null, 2))
+      }
+      
+      return insertedCount
+    } catch (error: any) {
+      console.error('❌ Error inserting play history records:', error)
+      console.error('Error code:', error.code)
+      console.error('Error message:', error.message)
+      console.error('Query (first 300 chars):', query.substring(0, 300))
+      console.error('Records count:', records.length)
+      if (records.length > 0) {
+        console.error('Sample record:', JSON.stringify(records[0], null, 2))
+      }
+      throw error
+    }
   }
 
   /**

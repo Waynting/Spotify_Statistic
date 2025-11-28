@@ -144,11 +144,19 @@ export async function syncUserData(spotifyUserId: string): Promise<{
   // Get latest play time from database
   const latestPlayTime = await PlayHistoryModel.getLatestPlayTime(spotifyUserId)
   const afterTimestamp = latestPlayTime ? Math.floor(latestPlayTime.getTime()) : undefined
+  
+  if (latestPlayTime) {
+    console.log(`⏰ Latest play time in DB: ${latestPlayTime.toISOString()}`)
+    console.log(`📅 Will only sync tracks played after: ${new Date(afterTimestamp!).toISOString()}`)
+  } else {
+    console.log(`📅 No previous sync found - will sync all recent tracks`)
+  }
 
   // Fetch recently played tracks (up to 50, which is API limit)
   console.log(`📡 Fetching recently played tracks for user ${spotifyUserId}`)
   const recentlyPlayedResponse = await fetchRecentlyPlayed(accessToken, 50)
   const recentlyPlayedTracks = recentlyPlayedResponse.items || []
+  console.log(`📊 Fetched ${recentlyPlayedTracks.length} recently played tracks`)
 
   // Convert to play history records
   const playHistoryRecords = recentlyPlayedTracks
@@ -173,9 +181,14 @@ export async function syncUserData(spotifyUserId: string): Promise<{
       popularity: item.track.popularity
     }))
 
+  console.log(`📝 Prepared ${playHistoryRecords.length} play history records to insert`)
+  if (afterTimestamp) {
+    console.log(`⏰ Filtering records after ${new Date(afterTimestamp).toISOString()}`)
+  }
+
   // Insert play history records (with deduplication)
   const newRecords = await PlayHistoryModel.insertMany(playHistoryRecords)
-  console.log(`✅ Inserted ${newRecords} new play history records`)
+  console.log(`✅ Inserted ${newRecords} new play history records (${playHistoryRecords.length - newRecords} were duplicates or skipped)`)
 
   // Fetch top tracks for additional data (using pagination to get more)
   console.log(`📡 Fetching top tracks for user ${spotifyUserId}`)
