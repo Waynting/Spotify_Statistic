@@ -82,7 +82,8 @@ export default function SpotifyCallback() {
             <div>
               <div className="text-6xl mb-4">✅</div>
               <p className="text-white font-medium mb-2">認證成功！</p>
-              <p className="text-gray-400">正在重定向到應用...</p>
+              <p className="text-gray-400 mb-2">正在重定向到應用...</p>
+              <p className="text-gray-500 text-sm mt-2">資料正在背景同步中，請稍候...</p>
             </div>
           )}
 

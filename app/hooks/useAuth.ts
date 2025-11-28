@@ -90,6 +90,15 @@ export function useAuth() {
               expires_in: tokens.expiresIn || 3600
             })
             console.log('✅ User registered with backend')
+            
+            // Trigger initial data sync in background (don't block login)
+            // This ensures user's play history is immediately synced to database
+            backendAPI.triggerSync(user.id).catch((syncError) => {
+              // Don't fail auth if sync fails - user can still use the app
+              // Sync will happen automatically via cron job later
+              console.warn('Background sync failed (non-blocking):', syncError)
+            })
+            console.log('🔄 Background sync triggered')
           }
         } catch (error) {
           // Don't fail auth if backend registration fails
