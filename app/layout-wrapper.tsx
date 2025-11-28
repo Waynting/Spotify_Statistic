@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Library, BarChart3, Folders, Settings as SettingsIcon, Menu, X } from 'lucide-react'
+import { Library, BarChart3, Folders, Settings as SettingsIcon, Info, Menu, X } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { spotifyWebAPI } from '@/lib/spotify-web-api'
 
@@ -29,6 +29,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     { to: '/analytics', icon: BarChart3, label: '數據分析', ariaLabel: '前往數據分析頁面' },
     { to: '/albums', icon: Library, label: '唱片櫃', ariaLabel: '前往唱片櫃頁面' },
     { to: '/crates', icon: Folders, label: '數據快照', ariaLabel: '前往數據快照頁面' },
+    { to: '/about', icon: Info, label: '關於', ariaLabel: '前往關於頁面' },
     { to: '/settings', icon: SettingsIcon, label: '設定', ariaLabel: '前往設定頁面' },
   ]
 
