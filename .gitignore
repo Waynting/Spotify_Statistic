@@ -1,80 +1,41 @@
-# Dependencies
-node_modules/
-*.pnp
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
 .pnp.js
 
-# Production builds
-/dist
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
 /build
+/dist
 
-# Environment variables
-.env*
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# misc
+.DS_Store
+*.pem
 
-# Logs
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# local env files
+.env*.local
+.env
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
+# vercel
+.vercel
 
-# nyc test coverage
-.nyc_output
+# typescript
+*.tsbuildinfo
+next-env.d.ts
 
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Tauri removed - web-only application
-
-# SQLite databases (optional - comment out if you want to include demo data)
-*.db
-*.sqlite
-*.sqlite3
-
-# Cache directories
-.cache/
-.parcel-cache/
-.next/
-.nuxt/
-.vuepress/dist
-
-# Temporary files
-*.tmp
-*.temp
-/Agent_use
-
-# Spotify credentials (keep these secret!)
-# Already covered by .env* pattern above
-
-# Build artifacts
-*.tgz
-*.tar.gz
-
-# Misc
-*.log
-.eslintcache
+# vite (legacy)
+dist/
+vite.config.ts.bak

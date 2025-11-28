@@ -1,5 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "crons": [
+    {
+      "path": "/api/cron/sync",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
