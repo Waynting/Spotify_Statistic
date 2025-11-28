@@ -1,127 +1,147 @@
 # 🎵 Spotify Crate - 開源音樂數據分析應用
 
-一個無需後端的 Spotify 音樂聆聽分析工具。只需設定您自己的 Spotify Client ID，即可部署並使用完整功能。
+一個完整的 Spotify 音樂聆聽分析工具，支援數據同步和歷史記錄追蹤。
 
-## 🚀 給開發者：30 秒快速部署
+## ✨ 功能特色
+
+- **📊 音樂數據分析**：專輯、單曲、藝人、曲風、時段分析
+- **📸 數據快照**：一鍵生成分享圖片
+- **🎯 時間篩選**：7天/30天/90天/180天/365天 多維度分析
+- **💾 歷史記錄**：自動同步播放記錄到資料庫
+- **🌓 純黑設計**：OLED 友好的純黑背景
+- **📱 響應式**：完美支援桌面和移動設備
+
+## 🚀 快速開始
+
+### 前置需求
+
+- Node.js 18+ 
+- PostgreSQL 資料庫（或使用 Supabase、Neon 等託管服務）
+- Spotify Developer Account
+
+### 安裝步驟
 
 ```bash
 # 1. 複製專案
-git clone https://github.com/your-username/spotify-crate.git
-cd spotify-crate
+git clone https://github.com/Waynting/Spotify_Statistic.git
+cd Spotify_Statistic
 
 # 2. 安裝依賴
 npm install
 
-# 3. 設定環境變數（見下方詳細說明）
+# 3. 設定環境變數
 cp .env.example .env
-# 編輯 .env 填入您的 Spotify Client ID
+# 編輯 .env 填入您的配置（見下方說明）
 
-# 4. 啟動開發環境
+# 4. 執行資料庫遷移
+npx tsx app/server/migrations/run-migrations.ts
+
+# 5. 啟動開發環境
 npm run dev
 ```
 
-**就這麼簡單！** 無需後端、無需資料庫、無需 Client Secret。
+訪問 `http://localhost:3000` 開始使用！
 
-## 🔑 獲取 Spotify Client ID（必要步驟）
+## 🔑 Spotify 應用設定
 
-### 1. 創建 Spotify 應用
+詳細的 Spotify 應用設定步驟請參考 [SPOTIFY_SETUP.md](./SPOTIFY_SETUP.md)
+
+### 快速設定
+
 1. 前往 [Spotify Dashboard](https://developer.spotify.com/dashboard)
-2. 點擊「Create app」
-3. 填寫應用資訊：
-   - **App name**: 任意名稱（如：My Music Stats）
-   - **App description**: 任意描述
-   - **Website**: 您的網站或 `http://localhost:8000`
-   - **Redirect URI**: 
-     - 開發環境：`http://127.0.0.1:8000/callback`
-     - 生產環境：`https://your-domain.com/callback`
+2. 創建新應用
+3. 設定 Redirect URI：
+   - 開發環境：`http://localhost:3000/callback`
+   - 生產環境：`https://your-domain.com/callback`
+4. 複製 Client ID 和 Client Secret
+5. 在 `.env` 中設定環境變數
 
-### 2. 設定 API 權限
-在應用設定中，確保勾選以下 API 權限：
-- `user-top-read`
-- `user-read-recently-played`
-- `user-read-playback-state`
-- `user-modify-playback-state`
-- `user-read-currently-playing`
+### ⚠️ 重要限制
 
-### 3. 複製 Client ID
-在應用設定頁面複製您的 **Client ID**（不是 Client Secret！）
+**用戶白名單限制**：
+- 非企業 Spotify 帳號最多只能添加 **25 個用戶** 到白名單
+- 個人使用或小範圍測試通常足夠
+- 公開應用需要申請 Spotify 企業帳號
 
-### 4. 設定環境變數
-創建 `.env` 檔案：
+詳細說明請參考 [SPOTIFY_SETUP.md](./SPOTIFY_SETUP.md#-重要限制用戶白名單)
+
+## ⚙️ 環境變數設定
+
+創建 `.env` 檔案並填入以下變數：
 
 ```env
-VITE_SPOTIFY_CLIENT_ID=你的_client_id_在這裡
-VITE_SPOTIFY_REDIRECT_URI_WEB=http://127.0.0.1:8000/callback
-VITE_SPOTIFY_REDIRECT_URI_DESKTOP=http://127.0.0.1:8001/callback
+# Spotify OAuth
+SPOTIFY_CLIENT_ID=你的_client_id
+SPOTIFY_CLIENT_SECRET=你的_client_secret
+NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=http://localhost:3000/callback
+
+# 資料庫連接（PostgreSQL）
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Cron Job 密鑰（用於自動同步）
+CRON_SECRET=隨機生成的密鑰字串
 ```
 
-## 🏗️ 技術架構
+詳細說明請參考 `.env.example`
 
-### 核心特點
-- **純前端架構**：使用 Spotify OAuth 2.0 PKCE 流程，無需後端
-- **零資料庫**：所有數據來自 Spotify API，本地緩存優化效能
-- **TypeScript + React**：現代化技術棧，類型安全
-- **即時部署**：支援 Vercel、Netlify 等靜態網站託管
-
-### 技術棧
-```
-Frontend:
-├── React 18 + TypeScript
-├── Vite (構建工具)
-├── Tailwind CSS (樣式)
-├── TanStack Query (數據管理)
-├── Zustand (狀態管理)
-├── Recharts (圖表)
-└── Lucide React (圖標)
-
-認證:
-└── Spotify Web API (OAuth 2.0 with PKCE)
-```
-
-### 專案結構
-```
-src/
-├── components/          # React 組件
-│   ├── analytics/      # 分析組件（專輯、歌曲、藝人等）
-│   ├── DataSnapshot.tsx # 數據快照功能
-│   └── Settings.tsx    # OAuth 連接設定
-├── lib/
-│   ├── spotify-web-api.ts  # Spotify API 客戶端
-│   ├── data-service.ts     # 數據處理層
-│   └── config.ts          # 環境配置
-└── types/              # TypeScript 類型定義
-```
-
-## 📦 部署到生產環境
+## 📦 部署
 
 ### Vercel 部署（推薦）
 
+詳細部署步驟請參考 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+#### 快速部署
+
 1. Fork 本專案到您的 GitHub
 2. 在 [Vercel](https://vercel.com) 導入專案
-3. 設定環境變數：
-   ```
-   VITE_SPOTIFY_CLIENT_ID = 您的_client_id
-   VITE_SPOTIFY_REDIRECT_URI_WEB = https://your-domain.vercel.app/callback
-   ```
-4. 部署！
+3. 設定環境變數（見上方）
+4. 設定 PostgreSQL 資料庫（可使用 Vercel Postgres）
+5. 部署！
 
-### Netlify 部署
+### 其他平台
 
-1. Fork 專案
-2. 在 [Netlify](https://netlify.com) 導入
-3. 建置設定：
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-4. 環境變數同上
+- **Netlify**: 需要設定 Next.js 運行時
+- **Railway**: 支援 PostgreSQL 和 Next.js
+- **自託管**: 需要 Node.js 環境和 PostgreSQL
 
-### 自託管部署
+## 🏗️ 技術架構
 
-```bash
-# 建置生產版本
-npm run build
+### 技術棧
 
-# dist 目錄包含所有靜態檔案
-# 上傳到任何靜態網站託管服務
+```
+Frontend:
+├── Next.js 14 (App Router)
+├── React 18 + TypeScript
+├── Tailwind CSS
+├── TanStack Query (數據管理)
+├── Zustand (狀態管理)
+└── Recharts (圖表)
+
+Backend:
+├── Next.js API Routes
+├── PostgreSQL
+└── Spotify Web API
+
+認證:
+└── Spotify OAuth 2.0 with PKCE
+```
+
+### 專案結構
+
+```
+app/
+├── components/          # React 組件
+│   ├── analytics/      # 分析組件
+│   └── ...
+├── api/                # Next.js API Routes
+│   ├── auth/           # 認證相關
+│   ├── sync/           # 數據同步
+│   └── analytics/      # 數據分析
+├── server/              # 後端服務
+│   ├── models/         # 資料庫模型
+│   ├── services/       # 業務邏輯
+│   └── migrations/     # 資料庫遷移
+└── lib/                # 工具庫
 ```
 
 ## 🛠️ 開發指南
@@ -129,67 +149,83 @@ npm run build
 ### 本地開發
 
 ```bash
-# 開發模式（支援熱更新）
+# 開發模式
 npm run dev
 
-# TypeScript 類型檢查
-npm run typecheck
-
-# 建置檢查
+# 建置生產版本
 npm run build
 
-# 預覽生產版本
-npm run preview
+# 啟動生產伺服器
+npm start
+
+# 執行資料庫遷移
+npx tsx app/server/migrations/run-migrations.ts
+
+# 驗證資料庫表結構
+npx tsx app/server/migrations/verify-tables.ts
+
+# 測試同步功能
+npx tsx app/server/migrations/test-sync.ts
 ```
 
-### 自訂修改
+### 資料庫管理
 
-#### 更換品牌/主題
-- 修改 `src/components/Layout.tsx` 的標題和導航
-- 調整 `tailwind.config.js` 的顏色配置
+```bash
+# 執行遷移
+npx tsx app/server/migrations/run-migrations.ts
 
-#### 新增分析功能
-1. 在 `src/components/analytics/` 新增組件
-2. 在 `src/lib/data-service.ts` 新增數據處理
-3. 在 `src/pages/Analytics.tsx` 引入新組件
+# 驗證表結構
+npx tsx app/server/migrations/verify-tables.ts
+```
 
-#### 修改 OAuth 流程
-- OAuth 實作在 `src/lib/spotify-web-api.ts`
-- 回調處理在 `src/components/SpotifyCallback.tsx`
+## 📚 文檔
 
-### API 使用說明
+- [部署指南](./DEPLOYMENT.md) - 詳細的部署說明
+- [Spotify 設定](./SPOTIFY_SETUP.md) - Spotify 應用設定步驟
+- [專案結構](./PROJECT_STRUCTURE.md) - 代碼結構說明
 
-應用使用以下 Spotify Web API endpoints：
-- `/me/top/{type}` - 獲取熱門內容
-- `/me/player/recently-played` - 最近播放
-- `/me/player` - 當前播放狀態
+## 🔄 數據同步
 
-所有 API 調用都通過 `DataService` 類處理，包含：
-- 自動 token 更新
-- 錯誤處理
-- 5 分鐘智能緩存
+系統會自動同步用戶的播放記錄：
 
-## 🎨 功能特色
-
-- **📊 音樂數據分析**：專輯、單曲、藝人、曲風、時段分析
-- **📸 數據快照**：一鍵生成分享圖片
-- **🎯 時間篩選**：7天/30天/180天/365天 多維度分析
-- **🌓 純黑設計**：OLED 友好的純黑背景
-- **📱 響應式**：完美支援桌面和移動設備
+1. **用戶登入時**：自動觸發首次同步
+2. **Cron Job**：每天 UTC 00:00 自動同步所有用戶
+3. **手動同步**：用戶可在設定頁面手動觸發
 
 ## ❓ 常見問題
 
-### 為什麼不需要 Client Secret？
-本應用使用 OAuth 2.0 PKCE 流程，專為公開客戶端（如 SPA）設計，無需 Client Secret。
+### 為什麼需要資料庫？
 
-### 數據儲存在哪裡？
-所有數據即時從 Spotify API 獲取，僅在瀏覽器內存中短暫緩存，不會永久儲存。
+資料庫用於儲存歷史播放記錄，讓您可以：
+- 查看更長時間範圍的數據
+- 追蹤播放趨勢
+- 提供更準確的分析
+
+### 資料安全嗎？
+
+- 所有數據儲存在您的資料庫中
+- OAuth token 加密儲存
+- 支援用戶隨時撤銷授權
+
+### Spotify API 用戶限制
+
+**重要**：Spotify API 對非企業用戶有白名單限制：
+- **免費/個人帳號**：最多只能添加 **25 個用戶** 到白名單
+- **企業帳號**：無限制
+
+這意味著：
+- 如果您的應用面向公眾，需要申請 Spotify 企業帳號
+- 個人使用或小範圍測試，25 個用戶限制通常足夠
+- 超過 25 個用戶後，新用戶將無法完成 OAuth 授權
+
+**解決方案**：
+1. 申請 Spotify 企業帳號（需要商業驗證）
+2. 限制應用使用範圍在 25 人以內
+3. 使用 Spotify 的 Extended Quota 計劃（需要申請）
 
 ### 可以商用嗎？
-本專案採用 MIT 授權，可自由使用。但需遵守 Spotify API 使用條款。
 
-### 如何處理 API 限制？
-應用內建智能緩存機制，相同請求 5 分鐘內不會重複調用。
+本專案採用 MIT 授權，可自由使用。但需遵守 Spotify API 使用條款。**注意**：商業使用需要 Spotify 企業帳號以支援更多用戶。
 
 ## 📄 授權
 
@@ -204,6 +240,4 @@ MIT License - 可自由使用、修改和分發
 
 ---
 
-**不需要後端，不需要資料庫，只需要您的創意！**
-
-Built with ❤️ using React + Spotify Web API
+**Built with ❤️ using Next.js + PostgreSQL + Spotify Web API**

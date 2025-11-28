@@ -1,259 +1,237 @@
 # 🚀 部署指南
 
-本文檔說明如何構建和部署 Spotify Crate 應用程式。
+本指南將幫助您將 Spotify Crate 部署到生產環境。
 
-## 📋 部署前檢查清單
+## 📋 前置需求
 
-### ✅ 環境準備
-- [ ] Node.js 16+ 已安裝
-- [ ] Rust 環境已配置（僅 Tauri 版本需要）
-- [ ] 所有依賴已安裝 (`npm install`)
-- [ ] 環境變數已設定
+- GitHub 帳號
+- Vercel 帳號（或其他部署平台）
+- PostgreSQL 資料庫（Vercel Postgres、Supabase、Neon 等）
+- Spotify Developer Account
 
-### ✅ Spotify App 設定
-- [ ] 已在 [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) 創建應用
-- [ ] 設定正確的 Redirect URI
-- [ ] 複製 Client ID 到環境變數
+## 🎯 部署步驟
 
-## 🌐 Web 版本部署
-
-### 1. 構建 Web 應用
+### 1. 準備專案
 
 ```bash
+# Fork 或 Clone 專案
+git clone https://github.com/Waynting/Spotify_Statistic.git
+cd Spotify_Statistic
+
 # 安裝依賴
 npm install
-
-# 構建生產版本
-npm run build
-
-# 預覽構建結果
-npm run preview
 ```
 
-### 2. 環境設定
+### 2. 設定 Spotify 應用
 
-創建 `.env` 文件：
+詳細步驟請參考 [SPOTIFY_SETUP.md](./SPOTIFY_SETUP.md)
 
-```env
-VITE_SPOTIFY_CLIENT_ID=你的_spotify_client_id
-VITE_SPOTIFY_REDIRECT_URI_WEB=https://你的域名.com/callback
-VITE_APP_NAME="Spotify Crate"
-VITE_APP_VERSION="1.0.0"
-```
+**重要**：記下您的：
+- Client ID
+- Client Secret
+- Redirect URI（生產環境 URL）
 
-### 3. 部署選項
+**⚠️ 用戶限制**：
+- 非企業 Spotify 帳號最多只能添加 **25 個用戶** 到白名單
+- 如果應用面向公眾，需要申請 Spotify 企業帳號
+- 個人使用或小範圍測試，25 個用戶限制通常足夠
 
-#### Netlify
+### 3. 設定資料庫
+
+#### 選項 A：使用 Vercel Postgres（推薦）
+
+1. 在 Vercel 專案中點擊 "Storage"
+2. 選擇 "Create Database" → "Postgres"
+3. 創建資料庫後，Vercel 會自動設定 `POSTGRES_URL` 環境變數
+
+#### 選項 B：使用 Supabase
+
+1. 前往 [Supabase](https://supabase.com) 創建專案
+2. 在專案設定中找到 "Connection string"
+3. 複製連接字串（格式：`postgresql://...`）
+
+#### 選項 C：使用 Neon
+
+1. 前往 [Neon](https://neon.tech) 創建專案
+2. 複製連接字串
+
+#### 執行資料庫遷移
+
+在本地執行遷移（或使用資料庫管理工具執行 SQL）：
+
 ```bash
-# 1. 構建
-npm run build
+# 設定本地環境變數
+export DATABASE_URL="your_database_url"
 
-# 2. 部署 dist/ 目錄
-# Redirect 規則 (_redirects 文件):
-/*    /index.html   200
+# 執行遷移
+npx tsx app/server/migrations/run-migrations.ts
 ```
 
-#### Vercel
+或直接在資料庫中執行 `app/server/migrations/001_create_tables.sql`
+
+### 4. 部署到 Vercel
+
+#### 方法 A：透過 GitHub（推薦）
+
+1. 將專案推送到 GitHub
+2. 前往 [Vercel](https://vercel.com)
+3. 點擊 "Add New Project"
+4. 導入您的 GitHub 專案
+5. 設定環境變數（見下方）
+6. 點擊 "Deploy"
+
+#### 方法 B：透過 Vercel CLI
 
 ```bash
-# 1. 安裝 Vercel CLI
+# 安裝 Vercel CLI
 npm i -g vercel
 
-# 2. 部署
-vercel --prod
+# 登入
+vercel login
+
+# 部署
+vercel
+
+# 設定環境變數
+vercel env add SPOTIFY_CLIENT_ID
+vercel env add SPOTIFY_CLIENT_SECRET
+vercel env add DATABASE_URL
+vercel env add CRON_SECRET
+vercel env add NEXT_PUBLIC_SPOTIFY_REDIRECT_URI
 ```
 
-**Vercel 環境變數設定：**
-在 Vercel Dashboard 中設定以下環境變數：
-- `VITE_SPOTIFY_CLIENT_ID`: 你的 Spotify Client ID
-- `VITE_SPOTIFY_REDIRECT_URI_PROD`: https://你的域名.vercel.app/callback
+### 5. 設定環境變數
 
-**Vercel 配置文件 (vercel.json)：**
+在 Vercel 專案設定中，添加以下環境變數：
+
+```env
+# Spotify OAuth
+SPOTIFY_CLIENT_ID=你的_client_id
+SPOTIFY_CLIENT_SECRET=你的_client_secret
+NEXT_PUBLIC_SPOTIFY_REDIRECT_URI=https://your-domain.vercel.app/callback
+
+# 資料庫（如果使用 Vercel Postgres，會自動設定）
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# Cron Job 密鑰（生成隨機字串）
+CRON_SECRET=your_random_secret_string_here
+
+# Node.js 環境
+NODE_ENV=production
+```
+
+**生成 CRON_SECRET**：
+```bash
+# 使用 openssl
+openssl rand -hex 32
+
+# 或使用 Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 6. 設定 Cron Job
+
+Vercel 會自動讀取 `vercel.json` 中的 Cron 設定：
+
 ```json
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "crons": [
+    {
+      "path": "/api/cron/sync",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
 ```
 
-#### GitHub Pages
-```bash
-# 1. 設定 base path (vite.config.ts)
-base: '/repository-name/'
+這會在每天 UTC 00:00 執行數據同步。
 
-# 2. 構建並推送到 gh-pages 分支
+**注意**：首次部署後，需要在 Vercel 專案設定中啟用 Cron Jobs。
+
+### 7. 更新 Spotify Redirect URI
+
+部署完成後，更新 Spotify Dashboard 中的 Redirect URI：
+
+1. 前往 [Spotify Dashboard](https://developer.spotify.com/dashboard)
+2. 選擇您的應用
+3. 編輯設定
+4. 添加生產環境 Redirect URI：`https://your-domain.vercel.app/callback`
+5. 儲存
+
+### 8. 驗證部署
+
+1. 訪問您的網站
+2. 點擊「連接 Spotify」
+3. 完成 OAuth 授權
+4. 檢查資料庫是否有數據寫入
+
+## 🔧 其他部署平台
+
+### Railway
+
+1. 連接 GitHub 專案
+2. 設定環境變數
+3. 添加 PostgreSQL 服務
+4. 部署
+
+### Netlify
+
+**注意**：Netlify 需要額外設定才能支援 Next.js API Routes。
+
+1. 使用 Netlify Next.js Runtime
+2. 設定環境變數
+3. 連接外部 PostgreSQL
+4. 部署
+
+### 自託管
+
+```bash
+# 建置
 npm run build
-npm run deploy
+
+# 啟動
+npm start
 ```
 
-## 💻 桌面應用部署
+需要：
+- Node.js 18+
+- PostgreSQL 資料庫
+- 反向代理（Nginx）
+- SSL 憑證（Let's Encrypt）
 
-### 1. 開發環境測試
+## 🔍 部署後檢查清單
 
-```bash
-# 運行開發版本
-npm run tauri dev
-```
-
-### 2. 生產構建
-
-```bash
-# 構建所有目標平台
-npm run tauri build
-
-# 構建特定平台
-npm run tauri build -- --target x86_64-apple-darwin     # macOS Intel
-npm run tauri build -- --target aarch64-apple-darwin    # macOS Apple Silicon  
-npm run tauri build -- --target x86_64-pc-windows-msvc  # Windows x64
-npm run tauri build -- --target x86_64-unknown-linux-gnu # Linux x64
-```
-
-### 3. 構建輸出
-
-構建完成後，可執行文件位於：
-
-```
-src-tauri/target/release/bundle/
-├── macos/           # macOS .app 和 .dmg
-├── msi/             # Windows .msi 安裝檔
-├── deb/             # Linux .deb 套件
-└── appimage/        # Linux AppImage
-```
-
-## 🔧 進階配置
-
-### Tauri 應用配置
-
-編輯 `src-tauri/tauri.conf.json`：
-
-```json
-{
-  "build": {
-    "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run dev",
-    "devPath": "http://localhost:5173",
-    "distDir": "../dist"
-  },
-  "package": {
-    "productName": "Spotify Crate",
-    "version": "1.0.0"
-  },
-  "app": {
-    "windows": [
-      {
-        "title": "Spotify Crate",
-        "width": 1200,
-        "height": 800,
-        "minWidth": 800,
-        "minHeight": 600
-      }
-    ]
-  }
-}
-```
-
-### 自動更新設定
-
-1. 配置更新伺服器
-2. 設定 `tauri.conf.json` 中的 updater
-3. 簽署應用程式（生產環境必需）
-
-## 🔐 安全考量
-
-### 生產環境檢查
-- [ ] 移除開發用的 debug 訊息
-- [ ] 確認 API 金鑰安全性
-- [ ] 設定正確的 Content Security Policy
-- [ ] 驗證 HTTPS 設定
-
-### Spotify API 配額
-- **開發模式**：最多 25 個測試用戶
-- **擴展配額**：最多 25,000 個用戶
-- **完整審核**：無限制用戶
-
-## 📊 監控和分析
-
-### 錯誤追蹤
-建議集成錯誤追蹤服務：
-- Sentry
-- Bugsnag
-- LogRocket
-
-### 使用分析
-可選擇集成：
-- Google Analytics
-- Mixpanel
-- Amplitude
-
-## 🔄 持續部署
-
-### GitHub Actions 範例
-
-```yaml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-      - run: npm install
-      - run: npm run build
-      - name: Deploy to Netlify
-        uses: netlify/actions/cli@master
-        with:
-          args: deploy --prod --dir=dist
-        env:
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-
-  build-desktop:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - run: npm install
-      - run: npm run tauri build
-```
+- [ ] 環境變數已正確設定
+- [ ] 資料庫遷移已執行
+- [ ] Spotify Redirect URI 已更新
+- [ ] Cron Job 已啟用
+- [ ] 網站可以正常訪問
+- [ ] OAuth 流程正常運作
+- [ ] 數據可以正常同步
+- [ ] 資料庫有數據寫入
 
 ## 🐛 常見問題
 
-### 構建失敗
-1. **Node.js 版本問題**：確保使用 Node.js 16+
-2. **Rust 環境問題**：重新安裝 Rust toolchain
-3. **依賴衝突**：清除 `node_modules` 和 `package-lock.json` 重新安裝
+### Cron Job 沒有執行
 
-### 運行時問題
-1. **Spotify 認證失敗**：檢查 Client ID 和 Redirect URI
-2. **API 配額超限**：考慮申請擴展配額
-3. **CORS 錯誤**：確認域名設定正確
+- 檢查 Vercel 專案設定中的 Cron Jobs 是否啟用
+- 確認 `CRON_SECRET` 環境變數已設定
+- 查看 Vercel 日誌中的 Cron 執行記錄
 
-### 性能優化
-1. **Bundle 大小**：使用 `npm run analyze` 分析
-2. **圖片優化**：壓縮專輯封面圖片
-3. **緩存策略**：調整 React Query 設定
+### 資料庫連接失敗
 
-## 📞 支援
+- 確認 `DATABASE_URL` 格式正確
+- 檢查資料庫是否允許外部連接
+- 確認 IP 白名單設定（如適用）
 
-部署過程中遇到問題？
-- 檢查 [GitHub Issues](../../issues)
-- 參考 [Tauri 官方文檔](https://tauri.app/)
-- 查看 [Spotify API 文檔](https://developer.spotify.com/documentation/)
+### OAuth 回調失敗
 
----
+- 確認 Redirect URI 與 Spotify Dashboard 設定一致
+- 檢查 `NEXT_PUBLIC_SPOTIFY_REDIRECT_URI` 環境變數
+- 確認使用 HTTPS（生產環境）
 
-🎉 **部署成功後，記得測試所有核心功能！**
+## 📞 需要幫助？
+
+- 查看 [README.md](./README.md)
+- 查看 [SPOTIFY_SETUP.md](./SPOTIFY_SETUP.md)
+- 提交 Issue 到 GitHub
